@@ -227,9 +227,10 @@ const routes = [
 ];
 
 
-const STORAGE = {
-  cars: "garant-auto:admin-cars",
-};
+const SUPABASE_URL = "https://qxlerdtnibglxwluazup.supabase.co";
+const SUPABASE_KEY = "sb_publishable__-J2w7Ysxu-_Dqn4lH9fFg_msVAnv7P";
+const SUPABASE_CARS_TABLE = "cars";
+const SUPABASE_BUCKET = "car-photos";
 
 const demoCover = "https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=900&q=86";
 
@@ -245,66 +246,241 @@ const photosInput = document.querySelector("[data-photos-input]");
 
 let toastTimer = null;
 let currentPhotos = [];
+let carsCache = [];
+let carsReady = false;
+let saving = false;
 
-renderList();
+bindStaticEvents();
+renderLoading();
+loadCarsFromSupabase();
 showList();
 
-form.addEventListener("submit", (event) => {
-  event.preventDefault();
+function bindStaticEvents() {
+  form.addEventListener("submit", onSubmitCar);
 
-  syncPhotoInputs();
-  const formData = new FormData(form);
-  const raw = Object.fromEntries(formData.entries());
-  const existing = getCarById(raw.id);
-  const car = normalizeCar(raw, existing);
+  document.querySelectorAll("[data-add-car], [data-add-car-secondary]").forEach((button) => {
+    button.addEventListener("click", () => openEditor());
+  });
 
-  const adminCars = readAdminCars().filter((item) => item.id !== car.id);
-  writeAdminCars([car, ...adminCars]);
+  document.querySelector("[data-back-to-list]").addEventListener("click", showList);
+  document.querySelector("[data-reset-form]").addEventListener("click", clearEditor);
 
-  renderList();
-  showList();
-  showToast(existing ? "Авто збережено" : "Авто додано");
-});
+  photoInput.addEventListener("change", onPhotosSelected);
+}
 
-document.querySelectorAll("[data-add-car], [data-add-car-secondary]").forEach((button) => {
-  button.addEventListener("click", () => openEditor());
-});
+function supabaseHeaders(extra = {}) {
+  return {
+    apikey: SUPABASE_KEY,
+    Authorization: `Bearer ${SUPABASE_KEY}`,
+    "Content-Type": "application/json",
+    ...extra,
+  };
+}
 
-document.querySelector("[data-back-to-list]").addEventListener("click", showList);
-document.querySelector("[data-reset-form]").addEventListener("click", clearEditor);
+async function supabaseRequest(path, options = {}) {
+  const response = await fetch(`${SUPABASE_URL}${path}`, {
+    ...options,
+    headers: supabaseHeaders(options.headers || {}),
+  });
 
-photoInput.addEventListener("change", async (event) => {
-  const files = [...event.target.files].filter((file) => file.type.startsWith("image/"));
-  if (!files.length) return;
+  if (!response.ok) {
+    const details = await response.text().catch(() => "");
+    throw new Error(details || `Supabase error ${response.status}`);
+  }
 
-  const photos = await Promise.all(files.map(readFileAsDataUrl));
-  currentPhotos = [...currentPhotos, ...photos];
-  renderPhotoGrid();
-  syncPhotoInputs();
-  photoInput.value = "";
-});
+  if (response.status === 204) return null;
+  return response.json();
+}
 
-function readAdminCars() {
+async function loadCarsFromSupabase() {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE.cars) || "[]");
-  } catch {
-    return [];
+    let rows = await supabaseRequest(`/rest/v1/${SUPABASE_CARS_TABLE}?select=*&order=created_at.desc`);
+    if (!Array.isArray(rows)) rows = [];
+
+    if (!rows.length) {
+      rows = await seedDefaultCars();
+      showToast("Каталог додано в Supabase");
+    }
+
+    carsCache = rows.map(rowToCar).filter(Boolean);
+    carsReady = true;
+    renderList();
+  } catch (error) {
+    console.error("Supabase load failed", error);
+    carsReady = false;
+    carsCache = [...defaultCars];
+    renderList("Не вдалося підключитися до Supabase. Перевір SQL-таблицю cars, bucket car-photos і policies.");
   }
 }
 
-function writeAdminCars(cars) {
-  localStorage.setItem(STORAGE.cars, JSON.stringify(cars));
+async function seedDefaultCars() {
+  const payload = defaultCars.map(carToRow);
+  const rows = await supabaseRequest(`/rest/v1/${SUPABASE_CARS_TABLE}?select=*`, {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify(payload),
+  });
+  return Array.isArray(rows) ? rows : [];
+}
+
+async function onSubmitCar(event) {
+  event.preventDefault();
+  if (saving) return;
+
+  try {
+    saving = true;
+    syncPhotoInputs();
+    setSubmitState(true);
+
+    const formData = new FormData(form);
+    const raw = Object.fromEntries(formData.entries());
+    const existing = getCarById(raw.id);
+    const car = normalizeCar(raw, existing);
+    const rowPayload = carToRow(car);
+
+    let savedRows;
+    if (existing?.id) {
+      savedRows = await supabaseRequest(`/rest/v1/${SUPABASE_CARS_TABLE}?id=eq.${encodeURIComponent(existing.id)}&select=*`, {
+        method: "PATCH",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify(rowPayload),
+      });
+    } else {
+      savedRows = await supabaseRequest(`/rest/v1/${SUPABASE_CARS_TABLE}?select=*`, {
+        method: "POST",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify(rowPayload),
+      });
+    }
+
+    const savedCar = rowToCar(Array.isArray(savedRows) ? savedRows[0] : savedRows);
+    if (!savedCar) throw new Error("Supabase не повернув авто після збереження");
+
+    carsCache = [savedCar, ...carsCache.filter((item) => item.id !== savedCar.id)];
+    renderList();
+    showList();
+    showToast(existing ? "Авто збережено в Supabase" : "Авто додано в Supabase");
+  } catch (error) {
+    console.error("Save car failed", error);
+    showToast("Помилка збереження. Перевір Supabase policies.");
+  } finally {
+    saving = false;
+    setSubmitState(false);
+  }
+}
+
+async function onPhotosSelected(event) {
+  const files = [...event.target.files].filter((file) => file.type.startsWith("image/"));
+  if (!files.length) return;
+
+  try {
+    showToast("Завантажую фото...");
+    const uploaded = [];
+
+    for (const file of files) {
+      uploaded.push(await uploadPhotoFile(file));
+    }
+
+    currentPhotos = uniquePhotos([...currentPhotos, ...uploaded]);
+    renderPhotoGrid();
+    syncPhotoInputs();
+    showToast("Фото додано");
+  } catch (error) {
+    console.error("Photo upload failed", error);
+    showToast("Фото не завантажилось. Перевір bucket car-photos.");
+  } finally {
+    photoInput.value = "";
+  }
+}
+
+async function uploadPhotoFile(file) {
+  const safeName = makeSafeFileName(file.name);
+  const path = `car-${Date.now()}-${Math.random().toString(16).slice(2)}-${safeName}`;
+  const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${path}`, {
+    method: "POST",
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      "x-upsert": "true",
+      "Content-Type": file.type || "application/octet-stream",
+    },
+    body: file,
+  });
+
+  if (!response.ok) {
+    const details = await response.text().catch(() => "");
+    throw new Error(details || `Storage error ${response.status}`);
+  }
+
+  return `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${path}`;
+}
+
+function makeSafeFileName(name) {
+  const clean = String(name || "photo.jpg")
+    .toLowerCase()
+    .replace(/[^a-z0-9.]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  return clean || "photo.jpg";
 }
 
 function allCarsForAdmin() {
-  const carsById = new Map(defaultCars.map((car) => [car.id, car]));
-  readAdminCars().forEach((car) => carsById.set(car.id, car));
-  return [...carsById.values()].sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt));
+  return [...carsCache].sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt));
 }
 
 function getCarById(id) {
   if (!id) return null;
-  return allCarsForAdmin().find((car) => car.id === id) || null;
+  return allCarsForAdmin().find((car) => String(car.id) === String(id)) || null;
+}
+
+function rowToCar(row) {
+  if (!row) return null;
+  const photos = Array.isArray(row.image_urls) ? row.image_urls.filter(Boolean) : parsePhotos(row.image_urls);
+  const cover = row.image_url || photos[0] || demoCover;
+
+  return {
+    id: String(row.id),
+    title: row.name || "Авто без назви",
+    make: row.brand || "",
+    model: row.model || "",
+    year: Number(row.year) || new Date().getFullYear(),
+    mileage: numberFromValue(row.mileage),
+    city: row.city || "",
+    price: numberFromValue(row.price),
+    fuel: row.fuel || "",
+    gearbox: row.gearbox || "",
+    body: row.body || "",
+    engine: row.engine || "",
+    status: row.status || "В наявності",
+    verified: true,
+    addedAt: row.created_at || new Date().toISOString(),
+    cover,
+    photos: photos.length ? photos : [cover],
+    description: row.description || "",
+  };
+}
+
+function carToRow(car) {
+  const photos = Array.isArray(car.photos) ? car.photos.filter(Boolean) : [];
+  const cover = car.cover || photos[0] || demoCover;
+
+  return {
+    name: car.title || "Авто без назви",
+    brand: car.make || "",
+    model: car.model || "",
+    price: String(car.price || ""),
+    year: Number(car.year) || null,
+    mileage: String(car.mileage || ""),
+    city: car.city || "",
+    fuel: car.fuel || "",
+    gearbox: car.gearbox || "",
+    body: car.body || "",
+    engine: car.engine || "",
+    status: car.status || "В наявності",
+    description: car.description || "",
+    image_url: cover,
+    image_urls: photos.length ? photos : [cover],
+  };
 }
 
 function normalizeCar(raw, existing) {
@@ -312,29 +488,30 @@ function normalizeCar(raw, existing) {
   const cover = photos[0] || raw.cover || existing?.cover || demoCover;
 
   return {
-    id: raw.id || `custom-${Date.now()}`,
-    title: raw.title.trim(),
-    make: raw.make.trim(),
-    model: raw.model.trim(),
+    id: existing?.id || raw.id || "",
+    title: String(raw.title || "").trim(),
+    make: String(raw.make || "").trim(),
+    model: String(raw.model || "").trim(),
     year: Number(raw.year),
     mileage: Number(raw.mileage),
-    city: raw.city.trim(),
+    city: String(raw.city || "").trim(),
     price: Number(raw.price),
-    fuel: raw.fuel,
-    gearbox: raw.gearbox,
-    body: raw.body.trim(),
-    engine: raw.engine.trim(),
+    fuel: raw.fuel || "",
+    gearbox: raw.gearbox || "",
+    body: String(raw.body || "").trim(),
+    engine: String(raw.engine || "").trim(),
     status: raw.status || "В наявності",
     verified: existing?.verified ?? true,
     addedAt: existing?.addedAt || new Date().toISOString(),
     cover,
     photos: photos.length ? photos : [cover],
-    description: raw.description.trim(),
+    description: String(raw.description || "").trim(),
   };
 }
 
 function parsePhotos(value) {
   if (!value) return [];
+  if (Array.isArray(value)) return value.filter(Boolean);
   try {
     const parsed = JSON.parse(value);
     return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
@@ -346,91 +523,121 @@ function parsePhotos(value) {
   }
 }
 
-function renderList() {
+function numberFromValue(value) {
+  if (typeof value === "number") return value;
+  const cleaned = String(value || "").replace(/[^0-9]/g, "");
+  return Number(cleaned) || 0;
+}
+
+function renderLoading() {
+  list.innerHTML = `<div class="empty-state"><div><h2>Завантажую авто...</h2><p>Підключаю каталог із Supabase.</p></div></div>`;
+}
+
+function renderList(errorMessage = "") {
   const cars = allCarsForAdmin();
 
-  list.innerHTML = cars
-    .map(
-      (car) => `
-        <article class="car-card admin-car-card" tabindex="0" data-edit-car="${escapeAttr(car.id)}">
-          <div class="car-media">
-            <img src="${escapeAttr(car.cover || car.photos?.[0] || demoCover)}" alt="${escapeAttr(car.title)}" loading="lazy" />
-            <span class="admin-card-badge">Редагувати</span>
-          </div>
-          <div class="car-body">
-            <h3 class="car-title">${escapeHtml(car.title)}</h3>
-            <p class="car-meta">${car.year} · ${formatKm(car.mileage)} · ${escapeHtml(car.city || "")}</p>
-            <p class="price">${formatPrice(car.price)}</p>
-            <div class="chips">
-              <span class="chip">${escapeHtml(car.fuel)}</span>
-              <span class="chip">${escapeHtml(car.gearbox)}</span>
+  if (!cars.length) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <div>
+          <h2>Авто ще немає</h2>
+          <p>${errorMessage || "Натисни Додати авто, щоб створити першу карточку."}</p>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  list.innerHTML = `
+    ${errorMessage ? `<div class="admin-warning">${escapeHtml(errorMessage)}</div>` : ""}
+    ${cars
+      .map(
+        (car) => `
+          <article class="car-card admin-car-card" tabindex="0" data-edit-car="${escapeAttr(car.id)}">
+            <div class="car-media">
+              <img src="${escapeAttr(car.cover || car.photos?.[0] || demoCover)}" alt="${escapeAttr(car.title)}" loading="lazy" />
+              <span class="admin-card-badge">Редагувати</span>
             </div>
-          </div>
-        </article>
-      `,
-    )
-    .join("");
+            <div class="car-body">
+              <div class="car-title-row">
+                <h3>${escapeHtml(car.title)}</h3>
+                <span class="status-badge">${escapeHtml(car.status || "В наявності")}</span>
+              </div>
+              <p class="car-subtitle">${escapeHtml([car.make, car.model, car.year].filter(Boolean).join(" · "))}</p>
+              <div class="car-meta">
+                <span>${formatKm(car.mileage)}</span>
+                <span>${escapeHtml(car.fuel || "—")}</span>
+                <span>${escapeHtml(car.gearbox || "—")}</span>
+              </div>
+              <div class="car-foot">
+                <strong>${formatPrice(car.price)}</strong>
+                <span>${escapeHtml(car.city || "")}</span>
+              </div>
+            </div>
+          </article>
+        `,
+      )
+      .join("")}
+  `;
 
   list.querySelectorAll("[data-edit-car]").forEach((card) => {
-    const open = () => openEditor(card.dataset.editCar);
-    card.addEventListener("click", open);
+    card.addEventListener("click", () => openEditor(card.dataset.editCar));
     card.addEventListener("keydown", (event) => {
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
-        open();
+        openEditor(card.dataset.editCar);
       }
     });
   });
 }
 
+function showList() {
+  listView.classList.add("is-active");
+  editorView.classList.remove("is-active");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
 function openEditor(id = "") {
   const car = getCarById(id);
   form.reset();
-
   form.elements.id.value = car?.id || "";
-  form.elements.title.value = car?.title || "";
-  form.elements.status.value = car?.status || "В наявності";
-  form.elements.make.value = car?.make || "";
-  form.elements.model.value = car?.model || "";
-  form.elements.price.value = car?.price || "";
-  form.elements.year.value = car?.year || "";
-  form.elements.mileage.value = car?.mileage || "";
-  form.elements.city.value = car?.city || "";
-  form.elements.fuel.value = car?.fuel || "Бензин";
-  form.elements.gearbox.value = car?.gearbox || "Автомат";
-  form.elements.body.value = car?.body || "";
-  form.elements.engine.value = car?.engine || "";
-  form.elements.description.value = car?.description || "";
-
+  formTitle.textContent = car ? "Редагування авто" : "Нове авто";
   currentPhotos = car ? uniquePhotos([car.cover, ...(car.photos || [])]) : [];
-  formTitle.textContent = car ? `Редагувати: ${car.title}` : "Додати авто";
+
+  if (car) {
+    fillForm(car);
+  }
+
   renderPhotoGrid();
   syncPhotoInputs();
-  showEditor();
+  listView.classList.remove("is-active");
+  editorView.classList.add("is-active");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function fillForm(car) {
+  form.elements.title.value = car.title || "";
+  form.elements.status.value = car.status || "В наявності";
+  form.elements.make.value = car.make || "";
+  form.elements.model.value = car.model || "";
+  form.elements.price.value = car.price || "";
+  form.elements.year.value = car.year || "";
+  form.elements.mileage.value = car.mileage || "";
+  form.elements.city.value = car.city || "";
+  form.elements.fuel.value = car.fuel || "Бензин";
+  form.elements.gearbox.value = car.gearbox || "Автомат";
+  form.elements.body.value = car.body || "";
+  form.elements.engine.value = car.engine || "";
+  form.elements.description.value = car.description || "";
 }
 
 function clearEditor() {
   form.reset();
   form.elements.id.value = "";
-  form.elements.status.value = "В наявності";
-  form.elements.fuel.value = "Бензин";
-  form.elements.gearbox.value = "Автомат";
   currentPhotos = [];
-  formTitle.textContent = "Додати авто";
   renderPhotoGrid();
   syncPhotoInputs();
-}
-
-function showList() {
-  editorView.classList.remove("is-active");
-  listView.classList.add("is-active");
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
-function showEditor() {
-  listView.classList.remove("is-active");
-  editorView.classList.add("is-active");
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  formTitle.textContent = "Нове авто";
 }
 
 function renderPhotoGrid() {
@@ -440,7 +647,7 @@ function renderPhotoGrid() {
         (photo, index) => `
           <div class="photo-tile ${index === 0 ? "is-cover" : ""}">
             <img src="${escapeAttr(photo)}" alt="Фото авто ${index + 1}" />
-            ${index === 0 ? `<span class="cover-label">Головне</span>` : `<button type="button" class="cover-button" data-make-cover="${index}">Головне</button>`}
+            ${index === 0 ? `<span>Головне</span>` : `<button type="button" data-make-cover="${index}">Головне</button>`}
             <button type="button" class="remove-photo" aria-label="Видалити фото" data-remove-photo="${index}">×</button>
           </div>
         `,
@@ -478,17 +685,15 @@ function syncPhotoInputs() {
   photosInput.value = JSON.stringify(photos.length ? photos : [demoCover]);
 }
 
-function readFileAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+function uniquePhotos(photos) {
+  return [...new Set((photos || []).filter(Boolean))];
 }
 
-function uniquePhotos(photos) {
-  return [...new Set(photos.filter(Boolean))];
+function setSubmitState(active) {
+  const submit = form.querySelector('button[type="submit"]');
+  if (!submit) return;
+  submit.disabled = active;
+  submit.textContent = active ? "Зберігаю..." : "Зберегти авто";
 }
 
 function formatPrice(value) {
@@ -505,7 +710,7 @@ function showToast(message) {
   clearTimeout(toastTimer);
   toast.textContent = message;
   toast.classList.add("is-visible");
-  toastTimer = setTimeout(() => toast.classList.remove("is-visible"), 1900);
+  toastTimer = setTimeout(() => toast.classList.remove("is-visible"), 2200);
 }
 
 function escapeHtml(value) {

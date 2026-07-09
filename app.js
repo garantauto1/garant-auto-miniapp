@@ -344,6 +344,14 @@ const sortOptions = [
   { id: "priceDesc", label: "Дорожчі", fullLabel: "За ціною вищою" },
 ];
 
+const SUPABASE_URL = "https://qxlerdtnibglxwluazup.supabase.co";
+const SUPABASE_KEY = "sb_publishable__-J2w7Ysxu-_Dqn4lH9fFg_msVAnv7P";
+const SUPABASE_CARS_TABLE = "cars";
+
+let remoteCars = [];
+let carsLoading = true;
+let carsLoadError = "";
+
 const app = document.getElementById("app");
 
 const state = {
@@ -362,6 +370,7 @@ let toastTimer = null;
 
 bootTelegram();
 render();
+loadCarsFromSupabase();
 
 function bootTelegram() {
   const tg = window.Telegram?.WebApp;
@@ -385,6 +394,133 @@ function writeJson(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
+function supabaseHeaders(extra = {}) {
+  return {
+    apikey: SUPABASE_KEY,
+    Authorization: `Bearer ${SUPABASE_KEY}`,
+    "Content-Type": "application/json",
+    ...extra,
+  };
+}
+
+async function supabaseRequest(path, options = {}) {
+  const response = await fetch(`${SUPABASE_URL}${path}`, {
+    ...options,
+    headers: supabaseHeaders(options.headers || {}),
+  });
+
+  if (!response.ok) {
+    const details = await response.text().catch(() => "");
+    throw new Error(details || `Supabase error ${response.status}`);
+  }
+
+  if (response.status === 204) return null;
+  return response.json();
+}
+
+async function loadCarsFromSupabase() {
+  carsLoading = true;
+  carsLoadError = "";
+
+  try {
+    let rows = await supabaseRequest(`/rest/v1/${SUPABASE_CARS_TABLE}?select=*&order=created_at.desc`);
+
+    if (!Array.isArray(rows)) rows = [];
+    if (!rows.length) {
+      rows = await seedDefaultCars();
+    }
+
+    remoteCars = rows.map(rowToCar).filter(Boolean);
+    carsLoading = false;
+    render();
+  } catch (error) {
+    console.error("Supabase cars load failed", error);
+    carsLoadError = "Supabase не завантажив авто, показую локальний каталог.";
+    carsLoading = false;
+    render();
+  }
+}
+
+async function seedDefaultCars() {
+  const payload = defaultCars.map(carToRow);
+  const rows = await supabaseRequest(`/rest/v1/${SUPABASE_CARS_TABLE}?select=*`, {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify(payload),
+  });
+  return Array.isArray(rows) ? rows : [];
+}
+
+function rowToCar(row) {
+  if (!row) return null;
+  const photos = Array.isArray(row.image_urls) ? row.image_urls.filter(Boolean) : parsePhotoList(row.image_urls);
+  const cover = row.image_url || photos[0] || "";
+
+  return {
+    id: String(row.id),
+    title: row.name || "Авто без назви",
+    make: row.brand || "",
+    model: row.model || "",
+    year: Number(row.year) || new Date().getFullYear(),
+    mileage: numberFromValue(row.mileage),
+    city: row.city || "",
+    price: numberFromValue(row.price),
+    fuel: row.fuel || "",
+    gearbox: row.gearbox || "",
+    body: row.body || "",
+    engine: row.engine || "",
+    status: row.status || "В наявності",
+    verified: true,
+    addedAt: row.created_at || new Date().toISOString(),
+    cover,
+    photos: photos.length ? photos : cover ? [cover] : [],
+    description: row.description || "",
+  };
+}
+
+function carToRow(car) {
+  const photos = Array.isArray(car.photos) ? car.photos.filter(Boolean) : [];
+  const cover = car.cover || photos[0] || "";
+
+  return {
+    name: car.title || "Авто без назви",
+    brand: car.make || "",
+    model: car.model || "",
+    price: String(car.price || ""),
+    year: Number(car.year) || null,
+    mileage: String(car.mileage || ""),
+    city: car.city || "",
+    fuel: car.fuel || "",
+    gearbox: car.gearbox || "",
+    body: car.body || "",
+    engine: car.engine || "",
+    status: car.status || "В наявності",
+    description: car.description || "",
+    image_url: cover,
+    image_urls: photos.length ? photos : cover ? [cover] : [],
+  };
+}
+
+function parsePhotoList(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.filter(Boolean);
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+  } catch {
+    return String(value)
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+}
+
+function numberFromValue(value) {
+  if (typeof value === "number") return value;
+  const cleaned = String(value || "").replace(/[^0-9]/g, "");
+  return Number(cleaned) || 0;
+}
+
 function emptyFilters() {
   return {
     minPrice: "",
@@ -403,6 +539,10 @@ function icon(name) {
 }
 
 function allCars() {
+  if (remoteCars.length) {
+    return [...remoteCars].sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt));
+  }
+
   const adminCars = readJson(STORAGE.cars, []);
   const carsById = new Map(defaultCars.map((car) => [car.id, car]));
   adminCars.forEach((car) => carsById.set(car.id, car));
