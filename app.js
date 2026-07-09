@@ -347,6 +347,11 @@ const sortOptions = [
 const SUPABASE_URL = "https://qxlerdtnibglxwluazup.supabase.co";
 const SUPABASE_KEY = "sb_publishable__-J2w7Ysxu-_Dqn4lH9fFg_msVAnv7P";
 const SUPABASE_CARS_TABLE = "cars";
+const MANAGER_TELEGRAM_URL = "https://t.me/garantauto_manager";
+const PHONE_NUMBERS = [
+  { label: "+380 (63) 709 04 37", tel: "+380637090437" },
+  { label: "+380 (93) 939 30 33", tel: "+380939393033" },
+];
 
 let remoteCars = [];
 let carsLoading = true;
@@ -359,6 +364,8 @@ const state = {
   returnRoute: "showroom",
   selectedCarId: null,
   selectedPhoto: 0,
+  galleryOpen: false,
+  callSheetOpen: false,
   query: "",
   filters: readJson(STORAGE.filters, emptyFilters()),
   view: "grid",
@@ -619,6 +626,8 @@ function render() {
     ${renderBottomNav()}
     ${renderDrawer()}
     ${renderFilterSheet()}
+    ${renderPhotoViewer()}
+    ${renderCallSheet()}
     <div class="toast" data-toast></div>
   `;
   bindEvents();
@@ -779,6 +788,35 @@ function renderCardsOrEmpty(cars, message, compact = false) {
   return cars.map((car) => renderCard(car, compact)).join("");
 }
 
+function currentCar() {
+  return allCars().find((item) => item.id === state.selectedCarId) || allCars()[0];
+}
+
+function currentPhotos(car = currentCar()) {
+  if (!car) return [];
+  const photos = Array.isArray(car.photos) ? car.photos.filter(Boolean) : [];
+  if (photos.length) return photos;
+  return [car.cover].filter(Boolean);
+}
+
+function normalizePhotoIndex(index, photos = currentPhotos()) {
+  if (!photos.length) return 0;
+  const length = photos.length;
+  return ((index % length) + length) % length;
+}
+
+function changePhoto(delta) {
+  const photos = currentPhotos();
+  state.selectedPhoto = normalizePhotoIndex(state.selectedPhoto + delta, photos);
+  render();
+}
+
+function setPhoto(index) {
+  const photos = currentPhotos();
+  state.selectedPhoto = normalizePhotoIndex(Number(index) || 0, photos);
+  render();
+}
+
 function renderCard(car) {
   return `
     <article class="car-card" tabindex="0" data-card-id="${car.id}">
@@ -802,24 +840,32 @@ function renderCard(car) {
 }
 
 function renderDetail() {
-  const car = allCars().find((item) => item.id === state.selectedCarId) || allCars()[0];
-  const photos = car.photos?.length ? car.photos : [car.cover].filter(Boolean);
-  const activePhoto = Math.min(state.selectedPhoto, photos.length - 1);
+  const car = currentCar();
+  const photos = currentPhotos(car);
+  const activePhoto = normalizePhotoIndex(state.selectedPhoto, photos);
+  state.selectedPhoto = activePhoto;
   const photo = photos[activePhoto] || car.cover || "";
+  const canSlide = photos.length > 1;
 
   return `
     <main class="screen detail-screen">
-      <header class="topbar detail-topbar">
+      <header class="topbar detail-topbar no-logo">
         <button class="icon-button" type="button" aria-label="Назад" data-back>${icon("arrowLeft")}</button>
-        ${renderLogo()}
-        <div style="display:flex;gap:8px;justify-content:end;">
+        <div></div>
+        <div class="detail-actions">
           <button class="icon-button ${isFavorite(car.id) ? "is-saved" : ""}" type="button" aria-label="В обране" data-favorite-id="${car.id}">${icon("heart")}</button>
           <button class="icon-button" type="button" aria-label="Поділитися" data-share>${icon("share")}</button>
         </div>
       </header>
       <section class="detail-hero">
-        <img class="detail-main-photo" src="${escapeAttr(photo)}" alt="${escapeAttr(car.title)}" />
-        <span class="counter-badge">${activePhoto + 1}/${photos.length}</span>
+        <button class="detail-photo-open" type="button" data-open-gallery aria-label="Відкрити галерею">
+          <img class="detail-main-photo" src="${escapeAttr(photo)}" alt="${escapeAttr(car.title)}" />
+        </button>
+        ${canSlide ? `
+          <button class="gallery-arrow gallery-arrow-left" type="button" data-photo-prev aria-label="Попереднє фото">${icon("arrowLeft")}</button>
+          <button class="gallery-arrow gallery-arrow-right" type="button" data-photo-next aria-label="Наступне фото">${icon("arrowRight")}</button>
+        ` : ""}
+        <span class="counter-badge">${activePhoto + 1}/${photos.length || 1}</span>
         <div class="thumbs">
           ${photos
             .slice(0, 5)
@@ -860,6 +906,58 @@ function renderDetail() {
         </div>
       </section>
     </main>
+  `;
+}
+
+function renderPhotoViewer() {
+  if (state.route !== "detail" || !state.galleryOpen) return "";
+  const car = currentCar();
+  const photos = currentPhotos(car);
+  const activePhoto = normalizePhotoIndex(state.selectedPhoto, photos);
+  const photo = photos[activePhoto] || car.cover || "";
+  const canSlide = photos.length > 1;
+
+  return `
+    <div class="modal-backdrop is-open" data-close-gallery></div>
+    <button class="icon-button gallery-exit-button" type="button" aria-label="Закрити галерею" data-close-gallery>${icon("x")}</button>
+    <section class="photo-viewer" role="dialog" aria-modal="true" aria-label="Галерея фото">
+      ${canSlide ? `<button class="viewer-arrow viewer-arrow-left" type="button" data-photo-prev aria-label="Попереднє фото">${icon("arrowLeft")}</button>` : ""}
+      <img class="viewer-photo" src="${escapeAttr(photo)}" alt="${escapeAttr(car.title)}" />
+      ${canSlide ? `<button class="viewer-arrow viewer-arrow-right" type="button" data-photo-next aria-label="Наступне фото">${icon("arrowRight")}</button>` : ""}
+      <div class="viewer-footer">
+        <span class="viewer-counter">${activePhoto + 1}/${photos.length || 1}</span>
+        <div class="viewer-thumbs">
+          ${photos
+            .slice(0, 8)
+            .map(
+              (item, index) => `
+                <button class="viewer-thumb ${index === activePhoto ? "is-active" : ""}" type="button" data-thumb="${index}" aria-label="Фото ${index + 1}">
+                  <img src="${escapeAttr(item)}" alt="" />
+                </button>
+              `,
+            )
+            .join("")}
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderCallSheet() {
+  if (!state.callSheetOpen) return "";
+  return `
+    <div class="modal-backdrop is-open" data-close-call></div>
+    <section class="call-sheet" role="dialog" aria-modal="true" aria-label="Виберіть номер телефону">
+      <div class="call-sheet-handle"></div>
+      <h3>Виберіть номер</h3>
+      <p>Натисніть на номер, щоб зателефонувати менеджеру.</p>
+      <div class="call-options">
+        ${PHONE_NUMBERS.map((item) => `
+          <a class="call-option" href="tel:${escapeAttr(item.tel)}">${icon("phone")} ${escapeHtml(item.label)}</a>
+        `).join("")}
+      </div>
+      <button class="soft-button call-cancel" type="button" data-close-call>Закрити</button>
+    </section>
   `;
 }
 
@@ -1061,8 +1159,40 @@ function bindEvents() {
 
   document.querySelector("[data-back]")?.addEventListener("click", () => setRoute(state.returnRoute || "showroom"));
   document.querySelectorAll("[data-thumb]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      setPhoto(button.dataset.thumb);
+    });
+  });
+  document.querySelectorAll("[data-photo-prev]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      changePhoto(-1);
+    });
+  });
+  document.querySelectorAll("[data-photo-next]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      changePhoto(1);
+    });
+  });
+  document.querySelectorAll("[data-open-gallery]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      state.galleryOpen = true;
+      render();
+    });
+  });
+
+  document.querySelector(".detail-hero")?.addEventListener("click", (event) => {
+    if (event.target.closest("[data-thumb], [data-photo-prev], [data-photo-next], .detail-actions, [data-back]")) return;
+    state.galleryOpen = true;
+    render();
+  });
+  document.querySelectorAll("[data-close-gallery]").forEach((button) => {
     button.addEventListener("click", () => {
-      state.selectedPhoto = Number(button.dataset.thumb) || 0;
+      state.galleryOpen = false;
       render();
     });
   });
@@ -1074,10 +1204,17 @@ function bindEvents() {
     event.currentTarget.textContent = box?.classList.contains("is-expanded") ? "Згорнути" : "Показати більше";
   });
   document.querySelector("[data-message]")?.addEventListener("click", () => {
-    window.open("https://t.me/garantauto_manager", "_blank");
+    window.open(MANAGER_TELEGRAM_URL, "_blank");
   });
   document.querySelector("[data-call]")?.addEventListener("click", () => {
-    window.location.href = "tel:+380000000000";
+    state.callSheetOpen = true;
+    render();
+  });
+  document.querySelectorAll("[data-close-call]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.callSheetOpen = false;
+      render();
+    });
   });
 }
 
@@ -1142,6 +1279,8 @@ function setRoute(route) {
   state.returnRoute = route;
   state.selectedCarId = null;
   state.selectedPhoto = 0;
+  state.galleryOpen = false;
+  state.callSheetOpen = false;
   state.sortOpen = false;
   setDrawer(false);
   render();
@@ -1153,6 +1292,8 @@ function openDetail(id) {
   state.returnRoute = activeRoute();
   state.selectedCarId = id;
   state.selectedPhoto = 0;
+  state.galleryOpen = false;
+  state.callSheetOpen = false;
   state.route = "detail";
   state.sortOpen = false;
   render();
