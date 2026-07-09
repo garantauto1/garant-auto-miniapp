@@ -686,7 +686,6 @@ function renderShowroom() {
     <main class="screen showroom-screen">
       ${renderTopbar()}
       <section class="hero">
-        <h1 class="hero-tagline"><span>Надійне авто.</span><span class="hero-tagline-line-2">Чесний вибір</span></h1>
         <span class="hero-edge hero-edge-top" aria-hidden="true"></span>
         <span class="hero-edge hero-edge-right" aria-hidden="true"></span>
         <span class="hero-edge hero-edge-bottom" aria-hidden="true"></span>

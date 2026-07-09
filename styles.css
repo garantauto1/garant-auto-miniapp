@@ -181,9 +181,9 @@ img {
 }
 
 .hero {
-  min-height: 376px;
-  margin: -58px -18px 8px;
-  padding: 74px 18px 14px;
+  min-height: 338px;
+  margin: -58px -18px 6px;
+  padding: 70px 18px 12px;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -197,7 +197,7 @@ img {
   content: "";
   position: absolute;
   inset: 0;
-  background: url("./assets/hero.jpg") center 66% / cover no-repeat;
+  background: url("./assets/hero.jpg") center 63% / cover no-repeat;
   filter: brightness(0.9) saturate(1.16) contrast(1.05);
   z-index: -2;
 }
@@ -301,7 +301,27 @@ img {
   position: relative;
   z-index: 1;
   display: grid;
-  gap: 10px;
+  gap: 8px;
+}
+
+.hero .primary-ghost {
+  min-height: 44px;
+}
+
+.hero .search-bar {
+  height: 48px;
+}
+
+.showroom-screen .section-head {
+  margin: 10px 0 8px;
+}
+
+.showroom-screen .rail .car-media {
+  height: 126px;
+}
+
+.showroom-screen .rail .car-body {
+  padding: 8px 10px 9px;
 }
 
 .hero-title {
@@ -1472,10 +1492,10 @@ img {
   }
 
   .hero {
-    min-height: 360px;
+    min-height: 326px;
     margin-left: -14px;
     margin-right: -14px;
-    padding-top: 72px;
+    padding-top: 68px;
     padding-left: 14px;
     padding-right: 14px;
   }
