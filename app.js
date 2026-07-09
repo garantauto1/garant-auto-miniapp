@@ -39,7 +39,7 @@ const defaultCars = [
     year: 2021,
     mileage: 45700,
     city: "Київ",
-    price: 2750000,
+    price: 68750,
     fuel: "Бензин",
     gearbox: "Автомат",
     body: "Позашляховик",
@@ -66,7 +66,7 @@ const defaultCars = [
     year: 2020,
     mileage: 57300,
     city: "Львів",
-    price: 1890000,
+    price: 47250,
     fuel: "Дизель",
     gearbox: "Автомат",
     body: "Седан",
@@ -93,7 +93,7 @@ const defaultCars = [
     year: 2020,
     mileage: 74200,
     city: "Одеса",
-    price: 2150000,
+    price: 53750,
     fuel: "Дизель",
     gearbox: "Автомат",
     body: "Позашляховик",
@@ -120,7 +120,7 @@ const defaultCars = [
     year: 2019,
     mileage: 82100,
     city: "Дніпро",
-    price: 1950000,
+    price: 48750,
     fuel: "Бензин",
     gearbox: "Автомат",
     body: "Кросовер",
@@ -147,7 +147,7 @@ const defaultCars = [
     year: 2018,
     mileage: 49800,
     city: "Київ",
-    price: 2350000,
+    price: 58750,
     fuel: "Бензин",
     gearbox: "Автомат",
     body: "Кросовер",
@@ -174,7 +174,7 @@ const defaultCars = [
     year: 2021,
     mileage: 61000,
     city: "Харків",
-    price: 2790000,
+    price: 69750,
     fuel: "Бензин",
     gearbox: "Автомат",
     body: "Позашляховик",
@@ -201,7 +201,7 @@ const defaultCars = [
     year: 2020,
     mileage: 38700,
     city: "Київ",
-    price: 1750000,
+    price: 43750,
     fuel: "Бензин",
     gearbox: "Автомат",
     body: "Седан",
@@ -228,7 +228,7 @@ const defaultCars = [
     year: 2021,
     mileage: 61200,
     city: "Тернопіль",
-    price: 2450000,
+    price: 61250,
     fuel: "Дизель",
     gearbox: "Автомат",
     body: "Позашляховик",
@@ -471,7 +471,7 @@ function rowToCar(row) {
     year: Number(row.year) || new Date().getFullYear(),
     mileage: numberFromValue(row.mileage),
     city: row.city || "",
-    price: numberFromValue(row.price),
+    price: priceToUsd(row.price),
     fuel: row.fuel || "",
     gearbox: row.gearbox || "",
     body: row.body || "",
@@ -528,6 +528,13 @@ function numberFromValue(value) {
   return Number(cleaned) || 0;
 }
 
+function priceToUsd(value) {
+  const number = numberFromValue(value);
+  // Старі авто могли бути збережені в гривнях. Якщо число схоже на гривневу ціну,
+  // показуємо його як долари, щоб у каталозі та адмінці все було в одній валюті.
+  return number > 300000 ? Math.round(number / 40) : number;
+}
+
 function emptyFilters() {
   return {
     minPrice: "",
@@ -569,7 +576,11 @@ function isFavorite(id) {
 }
 
 function formatPrice(value) {
-  return `${new Intl.NumberFormat("uk-UA").format(Number(value) || 0)} ₴`;
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(priceToUsd(value));
 }
 
 function formatKm(value) {
@@ -675,7 +686,7 @@ function renderShowroom() {
     <main class="screen showroom-screen">
       ${renderTopbar()}
       <section class="hero">
-        <h1 class="hero-tagline">Надійне авто.<br />Чесний вибір</h1>
+        <h1 class="hero-tagline"><span>Надійне авто.</span><span class="hero-tagline-line-2">Чесний вибір</span></h1>
         <span class="hero-edge hero-edge-top" aria-hidden="true"></span>
         <span class="hero-edge hero-edge-right" aria-hidden="true"></span>
         <span class="hero-edge hero-edge-bottom" aria-hidden="true"></span>
@@ -1016,12 +1027,12 @@ function renderFilterSheet() {
       <form class="filter-form" data-filter-form>
         <div class="field-row">
           <label class="field">
-            <span>Ціна від</span>
+            <span>Ціна від, $</span>
             <input name="minPrice" type="number" min="0" inputmode="numeric" value="${escapeAttr(filters.minPrice)}" placeholder="0" />
           </label>
           <label class="field">
-            <span>Ціна до</span>
-            <input name="maxPrice" type="number" min="0" inputmode="numeric" value="${escapeAttr(filters.maxPrice)}" placeholder="3 000 000" />
+            <span>Ціна до, $</span>
+            <input name="maxPrice" type="number" min="0" inputmode="numeric" value="${escapeAttr(filters.maxPrice)}" placeholder="100 000" />
           </label>
         </div>
         <div class="field make-field">

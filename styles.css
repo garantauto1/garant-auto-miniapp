@@ -100,7 +100,7 @@ img {
 }
 
 .topbar {
-  height: 58px;
+  height: 52px;
   display: grid;
   grid-template-columns: 48px 1fr 48px;
   align-items: center;
@@ -181,9 +181,9 @@ img {
 }
 
 .hero {
-  min-height: 452px;
-  margin: -58px -18px 14px;
-  padding: 82px 18px 18px;
+  min-height: 376px;
+  margin: -58px -18px 8px;
+  padding: 74px 18px 14px;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -197,7 +197,7 @@ img {
   content: "";
   position: absolute;
   inset: 0;
-  background: url("./assets/hero.jpg") center 52% / cover no-repeat;
+  background: url("./assets/hero.jpg") center 66% / cover no-repeat;
   filter: brightness(0.9) saturate(1.16) contrast(1.05);
   z-index: -2;
 }
@@ -217,21 +217,32 @@ img {
 .hero-tagline {
   position: absolute;
   z-index: 2;
-  top: 86px;
+  top: 82px;
   left: 20px;
-  max-width: 252px;
+  max-width: 340px;
   margin: 0;
-  color: rgba(248, 252, 255, 0.92);
-  font-family: "Unbounded", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-size: clamp(22px, 5.8vw, 27px);
-  line-height: 1.14;
-  letter-spacing: -0.045em;
-  font-weight: 600;
-  text-wrap: balance;
+  color: rgba(255, 255, 255, 0.68);
+  font-family: "Russo One", "Unbounded", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: clamp(17px, 4.7vw, 22px);
+  line-height: 0.98;
+  letter-spacing: 0.045em;
+  font-weight: 400;
+  text-transform: uppercase;
   text-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.08),
-    0 12px 30px rgba(0, 0, 0, 0.9),
-    0 0 24px rgba(0, 126, 255, 0.44);
+    0 2px 12px rgba(0, 0, 0, 0.92),
+    0 0 26px rgba(20, 135, 255, 0.34);
+  opacity: 0.82;
+  mix-blend-mode: screen;
+}
+
+.hero-tagline span {
+  display: block;
+}
+
+.hero-tagline-line-2 {
+  margin-left: 84px;
+  margin-top: 5px;
+  opacity: 0.82;
 }
 
 .hero-edge {
@@ -266,7 +277,7 @@ img {
   left: 0;
   right: 0;
   bottom: 0;
-  height: 138px;
+  height: 118px;
   -webkit-backdrop-filter: blur(5px);
   backdrop-filter: blur(5px);
   background: linear-gradient(180deg, rgba(5, 7, 12, 0) 0%, rgba(5, 7, 12, 0.2) 36%, rgba(5, 7, 12, 0.72) 74%, #05070c 100%);
@@ -290,7 +301,7 @@ img {
   position: relative;
   z-index: 1;
   display: grid;
-  gap: 14px;
+  gap: 10px;
 }
 
 .hero-title {
@@ -311,7 +322,7 @@ img {
 }
 
 .primary-ghost {
-  min-height: 48px;
+  min-height: 46px;
   padding: 0 18px;
   border-radius: var(--radius);
   display: inline-flex;
@@ -331,7 +342,7 @@ img {
 }
 
 .search-bar {
-  height: 58px;
+  height: 52px;
   display: grid;
   grid-template-columns: 42px 1fr 42px;
   align-items: center;
@@ -374,7 +385,7 @@ img {
   align-items: end;
   justify-content: space-between;
   gap: 14px;
-  margin: 22px 0 14px;
+  margin: 14px 0 10px;
 }
 
 .section-title,
@@ -412,7 +423,7 @@ img {
   grid-auto-columns: minmax(166px, 1fr);
   gap: 12px;
   overflow-x: auto;
-  padding: 0 0 18px;
+  padding: 0 0 10px;
   margin: 0 -4px;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
@@ -589,7 +600,24 @@ img {
 }
 
 .rail .car-media {
-  height: 152px;
+  height: 132px;
+}
+
+.rail .car-body {
+  padding: 9px 10px 10px;
+}
+
+.rail .car-title {
+  font-size: 13px;
+  line-height: 1.18;
+}
+
+.rail .car-meta {
+  margin-bottom: 6px;
+}
+
+.rail .chips {
+  margin-top: 7px;
 }
 
 .grid.is-list .car-card {
@@ -1444,19 +1472,24 @@ img {
   }
 
   .hero {
-    min-height: 438px;
+    min-height: 360px;
     margin-left: -14px;
     margin-right: -14px;
-    padding-top: 78px;
+    padding-top: 72px;
     padding-left: 14px;
     padding-right: 14px;
   }
 
   .hero-tagline {
-    top: 84px;
+    top: 80px;
     left: 18px;
-    max-width: 232px;
-    font-size: clamp(20px, 5.9vw, 24px);
+    max-width: 300px;
+    font-size: clamp(16px, 4.9vw, 20px);
+  }
+
+  .hero-tagline-line-2 {
+    margin-left: 62px;
+    margin-top: 5px;
   }
 
   .hero-title {
@@ -1863,7 +1896,7 @@ img {
 }
 
 .viewer-thumb {
-  height: 58px;
+  height: 52px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 14px;
   overflow: hidden;

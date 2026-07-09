@@ -9,7 +9,7 @@ const defaultCars = [
     year: 2021,
     mileage: 45700,
     city: "Київ",
-    price: 2750000,
+    price: 68750,
     fuel: "Бензин",
     gearbox: "Автомат",
     body: "Позашляховик",
@@ -36,7 +36,7 @@ const defaultCars = [
     year: 2020,
     mileage: 57300,
     city: "Львів",
-    price: 1890000,
+    price: 47250,
     fuel: "Дизель",
     gearbox: "Автомат",
     body: "Седан",
@@ -63,7 +63,7 @@ const defaultCars = [
     year: 2020,
     mileage: 74200,
     city: "Одеса",
-    price: 2150000,
+    price: 53750,
     fuel: "Дизель",
     gearbox: "Автомат",
     body: "Позашляховик",
@@ -90,7 +90,7 @@ const defaultCars = [
     year: 2019,
     mileage: 82100,
     city: "Дніпро",
-    price: 1950000,
+    price: 48750,
     fuel: "Бензин",
     gearbox: "Автомат",
     body: "Кросовер",
@@ -117,7 +117,7 @@ const defaultCars = [
     year: 2018,
     mileage: 49800,
     city: "Київ",
-    price: 2350000,
+    price: 58750,
     fuel: "Бензин",
     gearbox: "Автомат",
     body: "Кросовер",
@@ -144,7 +144,7 @@ const defaultCars = [
     year: 2021,
     mileage: 61000,
     city: "Харків",
-    price: 2790000,
+    price: 69750,
     fuel: "Бензин",
     gearbox: "Автомат",
     body: "Позашляховик",
@@ -171,7 +171,7 @@ const defaultCars = [
     year: 2020,
     mileage: 38700,
     city: "Київ",
-    price: 1750000,
+    price: 43750,
     fuel: "Бензин",
     gearbox: "Автомат",
     body: "Седан",
@@ -198,7 +198,7 @@ const defaultCars = [
     year: 2021,
     mileage: 61200,
     city: "Тернопіль",
-    price: 2450000,
+    price: 61250,
     fuel: "Дизель",
     gearbox: "Автомат",
     body: "Позашляховик",
@@ -446,7 +446,7 @@ function rowToCar(row) {
     year: Number(row.year) || new Date().getFullYear(),
     mileage: numberFromValue(row.mileage),
     city: row.city || "",
-    price: numberFromValue(row.price),
+    price: priceToUsd(row.price),
     fuel: row.fuel || "",
     gearbox: row.gearbox || "",
     body: row.body || "",
@@ -495,7 +495,7 @@ function normalizeCar(raw, existing) {
     year: Number(raw.year),
     mileage: Number(raw.mileage),
     city: String(raw.city || "").trim(),
-    price: Number(raw.price),
+    price: priceToUsd(raw.price),
     fuel: raw.fuel || "",
     gearbox: raw.gearbox || "",
     body: String(raw.body || "").trim(),
@@ -527,6 +527,12 @@ function numberFromValue(value) {
   if (typeof value === "number") return value;
   const cleaned = String(value || "").replace(/[^0-9]/g, "");
   return Number(cleaned) || 0;
+}
+
+function priceToUsd(value) {
+  const number = numberFromValue(value);
+  // Старі записи могли залишитися в гривнях. У адмінці показуємо єдину валюту — долари.
+  return number > 300000 ? Math.round(number / 40) : number;
 }
 
 function renderLoading() {
@@ -697,7 +703,11 @@ function setSubmitState(active) {
 }
 
 function formatPrice(value) {
-  return `${new Intl.NumberFormat("uk-UA").format(Number(value) || 0)} ₴`;
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(priceToUsd(value));
 }
 
 function formatKm(value) {
