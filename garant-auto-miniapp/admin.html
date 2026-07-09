@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#05070c" />
+    <title>Garant Auto Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="admin-shell">
+      <header class="admin-header">
+        <div>
+          <h1>Адмінка Garant Auto</h1>
+          <p>Усі авто з каталогу тепер тут карточками. Натисни на авто, щоб відкрити редактор і змінити дані або фото.</p>
+        </div>
+        <div class="admin-header-actions">
+          <a class="primary-ghost" href="./index.html">Відкрити mini app</a>
+          <button class="solid-button" type="button" data-add-car>Додати авто</button>
+        </div>
+      </header>
+
+      <section class="admin-view is-active" data-admin-view="list">
+        <div class="admin-card admin-catalog-card">
+          <div class="admin-section-head">
+            <div>
+              <h2>Авто в каталозі</h2>
+              <p>Відкривай карточку, редагуй дані й зберігай — зміни одразу будуть у mini app.</p>
+            </div>
+            <button class="soft-button" type="button" data-add-car-secondary>Додати авто</button>
+          </div>
+          <div class="admin-catalog-grid" data-admin-list></div>
+        </div>
+      </section>
+
+      <section class="admin-view" data-admin-view="editor">
+        <div class="admin-card admin-editor-card">
+          <div class="admin-editor-head">
+            <button class="soft-button" type="button" data-back-to-list>← Назад до карточок</button>
+            <h2 data-form-title>Нове авто</h2>
+          </div>
+
+          <form class="admin-form" data-car-form>
+            <input type="hidden" name="id" />
+            <input type="hidden" name="cover" data-cover-input />
+            <input type="hidden" name="photos" data-photos-input />
+
+            <div class="field-row">
+              <label class="field">
+                <span>Назва</span>
+                <input name="title" required placeholder="BMW X5 xDrive40i M Sport" />
+              </label>
+              <label class="field">
+                <span>Статус</span>
+                <select name="status" required>
+                  <option value="В наявності">В наявності</option>
+                  <option value="Бронь">Бронь</option>
+                  <option value="Продано">Продано</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="field-row">
+              <label class="field">
+                <span>Марка</span>
+                <input name="make" required placeholder="BMW" />
+              </label>
+              <label class="field">
+                <span>Модель</span>
+                <input name="model" required placeholder="X5" />
+              </label>
+            </div>
+
+            <div class="field-row">
+              <label class="field">
+                <span>Ціна, ₴</span>
+                <input name="price" required type="number" min="0" inputmode="numeric" placeholder="2750000" />
+              </label>
+              <label class="field">
+                <span>Рік</span>
+                <input name="year" required type="number" min="1990" max="2035" inputmode="numeric" placeholder="2021" />
+              </label>
+            </div>
+
+            <div class="field-row">
+              <label class="field">
+                <span>Пробіг, км</span>
+                <input name="mileage" required type="number" min="0" inputmode="numeric" placeholder="45700" />
+              </label>
+              <label class="field">
+                <span>Місто</span>
+                <input name="city" required placeholder="Київ" />
+              </label>
+            </div>
+
+            <div class="field-row">
+              <label class="field">
+                <span>Паливо</span>
+                <select name="fuel" required>
+                  <option value="Бензин">Бензин</option>
+                  <option value="Дизель">Дизель</option>
+                  <option value="Гібрид">Гібрид</option>
+                  <option value="Електро">Електро</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Коробка</span>
+                <select name="gearbox" required>
+                  <option value="Автомат">Автомат</option>
+                  <option value="Механіка">Механіка</option>
+                  <option value="Типтронік">Типтронік</option>
+                  <option value="Робот">Робот</option>
+                  <option value="Варіатор">Варіатор</option>
+                  <option value="DSG">DSG</option>
+                  <option value="Напівавтомат">Напівавтомат</option>
+                  <option value="Секвентальна">Секвентальна</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="field-row">
+              <label class="field">
+                <span>Кузов</span>
+                <input name="body" required placeholder="Позашляховик" />
+              </label>
+              <label class="field">
+                <span>Двигун</span>
+                <input name="engine" required placeholder="3.0 л" />
+              </label>
+            </div>
+
+            <label class="field">
+              <span>Опис</span>
+              <textarea name="description" required placeholder="Офіційний автомобіль, прозора історія..."></textarea>
+            </label>
+
+            <div class="field photo-field">
+              <span>Фото авто</span>
+              <p>Натисни на квадрат з плюсом, щоб вибрати фото з галереї або папки. Перше фото буде головним у каталозі.</p>
+              <input class="photo-input" type="file" accept="image/*" multiple data-photo-input />
+              <div class="photo-grid" data-photo-grid></div>
+            </div>
+
+            <div class="admin-actions">
+              <button class="soft-button" type="button" data-reset-form>Очистити</button>
+              <button class="solid-button" type="submit">Зберегти авто</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <div class="toast" data-toast></div>
+    </main>
+    <script src="./admin.js"></script>
+  </body>
+</html>
