@@ -652,7 +652,17 @@ function renderScreen() {
   return renderShowroom();
 }
 
-function renderTopbar() {
+function renderTopbar(isShowroom = false) {
+  if (isShowroom) {
+    return `
+      <header class="topbar showroom-topbar">
+        ${renderLogo()}
+        <div></div>
+        <button class="icon-button hamburger" type="button" aria-label="Меню" data-open-drawer>${icon("menu")}</button>
+      </header>
+    `;
+  }
+
   return `
     <header class="topbar">
       <div></div>
@@ -684,7 +694,7 @@ function renderShowroom() {
   const cars = filteredCars(allCars()).slice(0, 8);
   return `
     <main class="screen showroom-screen">
-      ${renderTopbar()}
+      ${renderTopbar(true)}
       <section class="hero">
         <span class="hero-edge hero-edge-top" aria-hidden="true"></span>
         <span class="hero-edge hero-edge-right" aria-hidden="true"></span>
