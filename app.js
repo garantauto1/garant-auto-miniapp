@@ -970,10 +970,10 @@ function renderCallSheet() {
     <section class="call-sheet" role="dialog" aria-modal="true" aria-label="Виберіть номер телефону">
       <div class="call-sheet-handle"></div>
       <h3>Виберіть номер</h3>
-      <p>Натисніть на номер, щоб зателефонувати менеджеру.</p>
+      <p>Натисніть на номер, щоб відкрити набір номера на телефоні.</p>
       <div class="call-options">
         ${PHONE_NUMBERS.map((item) => `
-          <a class="call-option" href="tel:${escapeAttr(item.tel)}" data-phone-link="${escapeAttr(item.tel)}" aria-label="Подзвонити ${escapeAttr(item.label)}">${icon("phone")} ${escapeHtml(item.label)}</a>
+          <a class="call-option" href="tel:${escapeAttr(item.tel)}" target="_blank" rel="noopener" data-phone-link="${escapeAttr(item.tel)}" aria-label="Подзвонити ${escapeAttr(item.label)}">${icon("phone")} ${escapeHtml(item.label)}</a>
         `).join("")}
       </div>
       <button class="soft-button call-cancel" type="button" data-close-call>Закрити</button>
@@ -1232,10 +1232,10 @@ function bindEvents() {
   });
   document.querySelectorAll("[data-phone-link]").forEach((button) => {
     button.addEventListener("click", (event) => {
-      const phone = button.dataset.phoneLink;
-      // Основной запуск идет через настоящий href="tel:..." на ссылке.
-      // Этот fallback нужен для Telegram WebView, где иногда tel-ссылки не срабатывают с первого раза.
-      setTimeout(() => dialPhone(phone), 80);
+      // Не блокуємо стандартний href="tel:..." — це основний шлях для телефону.
+      // Додатково дублюємо запуск через JS для Telegram WebView.
+      event.stopPropagation();
+      dialPhone(button.dataset.phoneLink);
     });
   });
   document.querySelectorAll("[data-close-call]").forEach((button) => {
@@ -1387,21 +1387,38 @@ function openManagerChat() {
 function dialPhone(phone) {
   if (!phone) return;
   const cleanedPhone = String(phone).replace(/[^+\d]/g, "");
+  if (!cleanedPhone) return;
   const telUrl = `tel:${cleanedPhone}`;
 
+  haptic("selection");
+
+  // В Telegram WebView надежнее запускать звонок напрямую из пользовательского клика.
+  // Пробуем несколько безопасных способов подряд: location, hidden-link и window.open.
   try {
-    const link = document.createElement("a");
-    link.href = telUrl;
-    link.target = "_self";
-    link.rel = "noopener";
-    link.style.display = "none";
-    document.body.appendChild(link);
-    link.click();
-    setTimeout(() => link.remove(), 600);
-    return;
-  } catch (error) {
-    window.location.assign(telUrl);
-  }
+    window.location.href = telUrl;
+  } catch (error) {}
+
+  setTimeout(() => {
+    try {
+      const link = document.createElement("a");
+      link.href = telUrl;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.style.position = "fixed";
+      link.style.left = "-9999px";
+      link.style.top = "-9999px";
+      link.textContent = cleanedPhone;
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => link.remove(), 800);
+    } catch (error) {}
+  }, 50);
+
+  setTimeout(() => {
+    try {
+      window.open(telUrl, "_blank", "noopener,noreferrer");
+    } catch (error) {}
+  }, 120);
 }
 
 function shareCurrentCar() {

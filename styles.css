@@ -2030,3 +2030,16 @@ img {
   width: 100%;
 }
 
+
+/* Phone call buttons: keep the tel: links clickable above Telegram WebView layers */
+.call-sheet {
+  z-index: 110;
+}
+.call-option {
+  position: relative;
+  z-index: 111;
+  pointer-events: auto;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
