@@ -973,7 +973,7 @@ function renderCallSheet() {
       <p>Натисніть на номер, щоб зателефонувати менеджеру.</p>
       <div class="call-options">
         ${PHONE_NUMBERS.map((item) => `
-          <button class="call-option" type="button" data-phone-link="${escapeAttr(item.tel)}" aria-label="Подзвонити ${escapeAttr(item.label)}">${icon("phone")} ${escapeHtml(item.label)}</button>
+          <a class="call-option" href="tel:${escapeAttr(item.tel)}" data-phone-link="${escapeAttr(item.tel)}" aria-label="Подзвонити ${escapeAttr(item.label)}">${icon("phone")} ${escapeHtml(item.label)}</a>
         `).join("")}
       </div>
       <button class="soft-button call-cancel" type="button" data-close-call>Закрити</button>
@@ -1231,8 +1231,11 @@ function bindEvents() {
     render();
   });
   document.querySelectorAll("[data-phone-link]").forEach((button) => {
-    button.addEventListener("click", () => {
-      dialPhone(button.dataset.phoneLink);
+    button.addEventListener("click", (event) => {
+      const phone = button.dataset.phoneLink;
+      // Основной запуск идет через настоящий href="tel:..." на ссылке.
+      // Этот fallback нужен для Telegram WebView, где иногда tel-ссылки не срабатывают с первого раза.
+      setTimeout(() => dialPhone(phone), 80);
     });
   });
   document.querySelectorAll("[data-close-call]").forEach((button) => {
@@ -1383,9 +1386,22 @@ function openManagerChat() {
 
 function dialPhone(phone) {
   if (!phone) return;
-  state.callSheetOpen = false;
-  const telUrl = `tel:${phone}`;
-  window.location.href = telUrl;
+  const cleanedPhone = String(phone).replace(/[^+\d]/g, "");
+  const telUrl = `tel:${cleanedPhone}`;
+
+  try {
+    const link = document.createElement("a");
+    link.href = telUrl;
+    link.target = "_self";
+    link.rel = "noopener";
+    link.style.display = "none";
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => link.remove(), 600);
+    return;
+  } catch (error) {
+    window.location.assign(telUrl);
+  }
 }
 
 function shareCurrentCar() {
