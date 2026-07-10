@@ -347,7 +347,7 @@ const sortOptions = [
 const SUPABASE_URL = "https://qxlerdtnibglxwluazup.supabase.co";
 const SUPABASE_KEY = "sb_publishable__-J2w7Ysxu-_Dqn4lH9fFg_msVAnv7P";
 const SUPABASE_CARS_TABLE = "cars";
-const MANAGER_TELEGRAM_URL = "https://t.me/garantauto_manager";
+const MANAGER_TELEGRAM_URL = "https://t.me/garant_auto1";
 const PHONE_NUMBERS = [
   { label: "+380 (63) 709 04 37", tel: "+380637090437" },
   { label: "+380 (93) 939 30 33", tel: "+380939393033" },
@@ -973,7 +973,7 @@ function renderCallSheet() {
       <p>Натисніть на номер, щоб зателефонувати менеджеру.</p>
       <div class="call-options">
         ${PHONE_NUMBERS.map((item) => `
-          <a class="call-option" href="tel:${escapeAttr(item.tel)}">${icon("phone")} ${escapeHtml(item.label)}</a>
+          <button class="call-option" type="button" data-phone-link="${escapeAttr(item.tel)}" aria-label="Подзвонити ${escapeAttr(item.label)}">${icon("phone")} ${escapeHtml(item.label)}</button>
         `).join("")}
       </div>
       <button class="soft-button call-cancel" type="button" data-close-call>Закрити</button>
@@ -1224,11 +1224,16 @@ function bindEvents() {
     event.currentTarget.textContent = box?.classList.contains("is-expanded") ? "Згорнути" : "Показати більше";
   });
   document.querySelector("[data-message]")?.addEventListener("click", () => {
-    window.open(MANAGER_TELEGRAM_URL, "_blank");
+    openManagerChat();
   });
   document.querySelector("[data-call]")?.addEventListener("click", () => {
     state.callSheetOpen = true;
     render();
+  });
+  document.querySelectorAll("[data-phone-link]").forEach((button) => {
+    button.addEventListener("click", () => {
+      dialPhone(button.dataset.phoneLink);
+    });
   });
   document.querySelectorAll("[data-close-call]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -1364,6 +1369,23 @@ function setDrawer(open) {
 function setFilters(open) {
   document.querySelector(".sheet")?.classList.toggle("is-open", open);
   document.querySelector(".sheet-backdrop")?.classList.toggle("is-open", open);
+}
+
+
+function openManagerChat() {
+  const tg = window.Telegram?.WebApp;
+  if (tg?.openTelegramLink) {
+    tg.openTelegramLink(MANAGER_TELEGRAM_URL);
+    return;
+  }
+  window.location.href = MANAGER_TELEGRAM_URL;
+}
+
+function dialPhone(phone) {
+  if (!phone) return;
+  state.callSheetOpen = false;
+  const telUrl = `tel:${phone}`;
+  window.location.href = telUrl;
 }
 
 function shareCurrentCar() {
