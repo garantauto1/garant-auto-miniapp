@@ -511,7 +511,7 @@ function rowToCar(row) {
     make: row.brand || "",
     model: row.model || "",
     year: Number(row.year) || new Date().getFullYear(),
-    mileage: numberFromValue(row.mileage),
+    mileage: mileageFromStorage(row.mileage),
     city: row.city || "",
     price: priceToUsd(row.price),
     fuel: row.fuel || "",
@@ -560,7 +560,7 @@ function normalizeCar(raw, existing) {
     make: String(raw.make || "").trim(),
     model: String(raw.model || "").trim(),
     year: Number(raw.year),
-    mileage: Number(raw.mileage),
+    mileage: mileageFromInput(raw.mileage),
     city: String(raw.city || "").trim(),
     price: priceToUsd(raw.price),
     fuel: raw.fuel || "",
@@ -594,6 +594,34 @@ function numberFromValue(value) {
   if (typeof value === "number") return value;
   const cleaned = String(value || "").replace(/[^0-9]/g, "");
   return Number(cleaned) || 0;
+}
+
+function mileageFromStorage(value) {
+  const number = numberFromValue(value);
+  // Якщо раніше в адмінці випадково зберегли 225 замість 225000, читаємо це як 225 тис. км.
+  return number > 0 && number <= 999 ? number * 1000 : number;
+}
+
+function decimalNumberFromValue(value) {
+  if (typeof value === "number") return value;
+  const normalized = String(value || "")
+    .replace(",", ".")
+    .replace(/[^0-9.]/g, "");
+  return Number.parseFloat(normalized) || 0;
+}
+
+function mileageFromInput(value) {
+  const number = decimalNumberFromValue(value);
+  if (!number) return 0;
+  // В адмінці поле тепер у тисячах км: 225 = 225 000 км.
+  return number <= 999 ? Math.round(number * 1000) : Math.round(number);
+}
+
+function mileageInputFromKm(value) {
+  const km = Number(value) || 0;
+  if (!km) return "";
+  const thousands = km >= 1000 ? km / 1000 : km;
+  return Number.isInteger(thousands) ? String(thousands) : String(Number(thousands.toFixed(1)));
 }
 
 function priceToUsd(value) {
@@ -696,7 +724,7 @@ function fillForm(car) {
   form.elements.model.value = car.model || "";
   form.elements.price.value = car.price || "";
   form.elements.year.value = car.year || "";
-  form.elements.mileage.value = car.mileage || "";
+  form.elements.mileage.value = mileageInputFromKm(car.mileage);
   form.elements.city.value = car.city || "";
   form.elements.fuel.value = car.fuel || "Бензин";
   form.elements.gearbox.value = car.gearbox || "Автомат";
@@ -792,7 +820,13 @@ function formatPrice(value) {
 }
 
 function formatKm(value) {
-  return `${new Intl.NumberFormat("uk-UA").format(Number(value) || 0)} км`;
+  const km = Number(value) || 0;
+  if (km >= 1000) {
+    const thousands = km / 1000;
+    const shown = Number.isInteger(thousands) ? thousands : Number(thousands.toFixed(1));
+    return `${new Intl.NumberFormat("uk-UA").format(shown)} тис. км`;
+  }
+  return `${new Intl.NumberFormat("uk-UA").format(km)} км`;
 }
 
 function showToast(message) {

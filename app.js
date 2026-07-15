@@ -462,7 +462,7 @@ function rowToCar(row) {
     make: row.brand || "",
     model: row.model || "",
     year: Number(row.year) || new Date().getFullYear(),
-    mileage: numberFromValue(row.mileage),
+    mileage: mileageFromStorage(row.mileage),
     city: row.city || "",
     price: priceToUsd(row.price),
     fuel: row.fuel || "",
@@ -521,6 +521,12 @@ function numberFromValue(value) {
   return Number(cleaned) || 0;
 }
 
+function mileageFromStorage(value) {
+  const number = numberFromValue(value);
+  // Якщо раніше в адмінці випадково зберегли 225 замість 225000, читаємо це як 225 тис. км.
+  return number > 0 && number <= 999 ? number * 1000 : number;
+}
+
 function priceToUsd(value) {
   const number = numberFromValue(value);
   // Старі авто могли бути збережені в гривнях. Якщо число схоже на гривневу ціну,
@@ -576,7 +582,13 @@ function formatPrice(value) {
 }
 
 function formatKm(value) {
-  return `${new Intl.NumberFormat("uk-UA").format(Number(value) || 0)} км`;
+  const km = Number(value) || 0;
+  if (km >= 1000) {
+    const thousands = km / 1000;
+    const shown = Number.isInteger(thousands) ? thousands : Number(thousands.toFixed(1));
+    return `${new Intl.NumberFormat("uk-UA").format(shown)} тис. км`;
+  }
+  return `${new Intl.NumberFormat("uk-UA").format(km)} км`;
 }
 
 function normalizeText(value) {

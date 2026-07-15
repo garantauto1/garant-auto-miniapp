@@ -458,10 +458,11 @@ img {
 .rail {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(166px, 1fr);
+  grid-auto-columns: 168px;
+  justify-content: start;
   gap: 12px;
   overflow-x: auto;
-  padding: 0 0 10px;
+  padding: 0 4px 10px;
   margin: 0 -4px;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
@@ -472,6 +473,8 @@ img {
 }
 
 .rail .car-card {
+  width: 168px;
+  max-width: 168px;
   scroll-snap-align: start;
 }
 
@@ -638,7 +641,17 @@ img {
 }
 
 .rail .car-media {
-  height: 132px;
+  height: 122px;
+  background: radial-gradient(circle at 50% 50%, rgba(22, 44, 76, 0.72), #080d16 72%);
+}
+
+.rail .car-media img {
+  object-fit: contain;
+  padding: 6px;
+}
+
+.rail .car-media::after {
+  content: none;
 }
 
 .rail .car-body {
@@ -1166,7 +1179,7 @@ img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: brightness(0.58) saturate(0.92) contrast(1.08);
+  filter: none;
 }
 
 .gallery-arrow {
@@ -1202,24 +1215,27 @@ img {
 .detail-hero::before {
   content: "";
   position: absolute;
-  inset: 0;
+  inset: auto 0 0;
+  height: 150px;
   z-index: 1;
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(3, 5, 10, 0.2), rgba(3, 5, 10, 0.14) 44%, #05070c 96%);
+  background: linear-gradient(180deg, rgba(5, 7, 12, 0), rgba(5, 7, 12, 0.74) 72%, #05070c 100%);
 }
 
 .thumbs {
   position: relative;
   z-index: 2;
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 9px;
-  margin-top: 330px;
+  display: flex;
+  gap: 6px;
+  margin-top: 370px;
+  max-width: 300px;
 }
 
 .thumb {
-  height: 72px;
-  border-radius: var(--radius);
+  flex: 0 0 48px;
+  width: 48px;
+  height: 38px;
+  border-radius: 11px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.04);
@@ -1240,7 +1256,7 @@ img {
 .counter-badge {
   position: absolute;
   left: 18px;
-  bottom: 112px;
+  bottom: 82px;
   z-index: 3;
   padding: 8px 12px;
   border-radius: var(--radius);
@@ -1884,16 +1900,16 @@ img {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: calc(22px + var(--safe-top)) 14px calc(122px + var(--safe-bottom));
-  background: rgba(2, 4, 8, 0.28);
+  padding: calc(42px + var(--safe-top)) 22px calc(112px + var(--safe-bottom));
+  background: rgba(2, 4, 8, 0.24);
 }
 
 .viewer-photo {
-  max-width: 100%;
-  max-height: 74vh;
-  border-radius: 22px;
+  max-width: 92vw;
+  max-height: 58vh;
+  border-radius: 18px;
   object-fit: contain;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.62);
+  box-shadow: 0 20px 64px rgba(0, 0, 0, 0.56);
 }
 
 .gallery-exit-button {
@@ -1941,37 +1957,45 @@ img {
 
 .viewer-footer {
   position: fixed;
-  left: 14px;
-  right: 14px;
+  left: 18px;
+  right: 18px;
   bottom: calc(18px + var(--safe-bottom));
   z-index: 72;
-  padding: 12px;
-  border-radius: 22px;
-  background: rgba(5, 8, 14, 0.72);
+  padding: 9px;
+  border-radius: 18px;
+  background: rgba(5, 8, 14, 0.66);
   border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(18px);
 }
 
 .viewer-counter {
   display: inline-flex;
-  margin-bottom: 10px;
-  padding: 6px 10px;
+  margin-bottom: 7px;
+  padding: 5px 9px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.08);
   color: var(--text);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .viewer-thumbs {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.viewer-thumbs::-webkit-scrollbar {
+  display: none;
 }
 
 .viewer-thumb {
-  height: 52px;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 34px;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 14px;
+  border-radius: 10px;
   overflow: hidden;
   padding: 0;
   background: rgba(255, 255, 255, 0.05);
