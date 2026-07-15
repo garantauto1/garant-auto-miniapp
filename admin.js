@@ -243,12 +243,15 @@ const photoInput = document.querySelector("[data-photo-input]");
 const photoGrid = document.querySelector("[data-photo-grid]");
 const coverInput = document.querySelector("[data-cover-input]");
 const photosInput = document.querySelector("[data-photos-input]");
+const deleteCarButton = document.querySelector("[data-delete-car]");
+const adminActions = document.querySelector("[data-admin-actions]");
 
 let toastTimer = null;
 let currentPhotos = [];
 let carsCache = [];
 let carsReady = false;
 let saving = false;
+let deleting = false;
 
 bindStaticEvents();
 renderLoading();
@@ -264,6 +267,7 @@ function bindStaticEvents() {
 
   document.querySelector("[data-back-to-list]").addEventListener("click", showList);
   document.querySelector("[data-reset-form]").addEventListener("click", clearEditor);
+  deleteCarButton?.addEventListener("click", onDeleteCurrentCar);
 
   photoInput.addEventListener("change", onPhotosSelected);
 }
@@ -367,6 +371,75 @@ async function onSubmitCar(event) {
     saving = false;
     setSubmitState(false);
   }
+}
+
+async function onDeleteCurrentCar() {
+  if (deleting || saving) return;
+
+  const carId = form.elements.id.value;
+  const car = getCarById(carId);
+  if (!car?.id) {
+    showToast("Спочатку відкрий авто з каталогу");
+    return;
+  }
+
+  const confirmed = window.confirm(`Видалити авто «${car.title || "без назви"}» з каталогу повністю?`);
+  if (!confirmed) return;
+
+  try {
+    deleting = true;
+    setDeleteState(true);
+
+    await supabaseRequest(`/rest/v1/${SUPABASE_CARS_TABLE}?id=eq.${encodeURIComponent(car.id)}`, {
+      method: "DELETE",
+    });
+
+    await deleteCarPhotosFromStorage(car);
+
+    carsCache = carsCache.filter((item) => String(item.id) !== String(car.id));
+    renderList();
+    clearEditor();
+    showList();
+    showToast("Авто видалено з каталогу");
+  } catch (error) {
+    console.error("Delete car failed", error);
+    showToast("Помилка видалення. Перевір Supabase delete policy.");
+  } finally {
+    deleting = false;
+    setDeleteState(false);
+  }
+}
+
+async function deleteCarPhotosFromStorage(car) {
+  const paths = uniquePhotos([car.cover, ...(car.photos || [])])
+    .map(getStoragePathFromPublicUrl)
+    .filter(Boolean);
+
+  if (!paths.length) return;
+
+  try {
+    const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}`, {
+      method: "DELETE",
+      headers: supabaseHeaders(),
+      body: JSON.stringify({ prefixes: paths }),
+    });
+
+    if (!response.ok) {
+      const details = await response.text().catch(() => "");
+      console.warn("Storage photos were not deleted", details || response.status);
+    }
+  } catch (error) {
+    console.warn("Storage photos were not deleted", error);
+  }
+}
+
+function getStoragePathFromPublicUrl(url) {
+  const value = String(url || "");
+  const marker = `/storage/v1/object/public/${SUPABASE_BUCKET}/`;
+  const index = value.indexOf(marker);
+  if (index === -1) return "";
+
+  return decodeURIComponent(value.slice(index + marker.length));
 }
 
 async function onPhotosSelected(event) {
@@ -608,6 +681,7 @@ function openEditor(id = "") {
   form.reset();
   form.elements.id.value = car?.id || "";
   formTitle.textContent = car ? "Редагування авто" : "Нове авто";
+  setDeleteButtonVisible(Boolean(car));
   currentPhotos = car ? uniquePhotos([car.cover, ...(car.photos || [])]) : [];
 
   if (car) {
@@ -644,6 +718,7 @@ function clearEditor() {
   renderPhotoGrid();
   syncPhotoInputs();
   formTitle.textContent = "Нове авто";
+  setDeleteButtonVisible(false);
 }
 
 function renderPhotoGrid() {
@@ -700,6 +775,18 @@ function setSubmitState(active) {
   if (!submit) return;
   submit.disabled = active;
   submit.textContent = active ? "Зберігаю..." : "Зберегти авто";
+}
+
+function setDeleteButtonVisible(visible) {
+  if (!deleteCarButton) return;
+  deleteCarButton.hidden = !visible;
+  adminActions?.classList.toggle("has-delete", visible);
+}
+
+function setDeleteState(active) {
+  if (!deleteCarButton) return;
+  deleteCarButton.disabled = active;
+  deleteCarButton.textContent = active ? "Видаляю..." : "Видалити авто";
 }
 
 function formatPrice(value) {

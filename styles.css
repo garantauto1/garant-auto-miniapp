@@ -1061,6 +1061,14 @@ img {
   margin-top: 8px;
 }
 
+.admin-actions.has-delete {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.admin-actions button[hidden] {
+  display: none !important;
+}
+
 .solid-button,
 .soft-button,
 .danger-button {
@@ -1091,6 +1099,13 @@ img {
 .soft-button:active,
 .danger-button:active {
   transform: scale(0.98);
+}
+
+.solid-button:disabled,
+.soft-button:disabled,
+.danger-button:disabled {
+  opacity: 0.62;
+  cursor: progress;
 }
 
 .detail-screen {
@@ -1825,6 +1840,11 @@ img {
   .admin-section-head .soft-button,
   .admin-editor-head .soft-button {
     width: 100%;
+  }
+
+  .admin-actions,
+  .admin-actions.has-delete {
+    grid-template-columns: 1fr;
   }
 
   .admin-catalog-grid {
