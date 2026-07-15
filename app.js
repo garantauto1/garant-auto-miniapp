@@ -356,6 +356,7 @@ const PHONE_NUMBERS = [
 let remoteCars = [];
 let carsLoading = true;
 let carsLoadError = "";
+let supabaseCarsLoaded = false;
 
 const app = document.getElementById("app");
 
@@ -428,34 +429,26 @@ async function supabaseRequest(path, options = {}) {
 async function loadCarsFromSupabase() {
   carsLoading = true;
   carsLoadError = "";
+  supabaseCarsLoaded = false;
 
   try {
     let rows = await supabaseRequest(`/rest/v1/${SUPABASE_CARS_TABLE}?select=*&order=created_at.desc`);
-
     if (!Array.isArray(rows)) rows = [];
-    if (!rows.length) {
-      rows = await seedDefaultCars();
-    }
 
+    // ВАЖЛИВО: якщо в Supabase немає авто, показуємо порожній каталог.
+    // Не засіваємо demo-авто заново, інакше видалені машини повертаються після оновлення.
     remoteCars = rows.map(rowToCar).filter(Boolean);
     carsLoading = false;
+    supabaseCarsLoaded = true;
     render();
   } catch (error) {
     console.error("Supabase cars load failed", error);
-    carsLoadError = "Supabase не завантажив авто, показую локальний каталог.";
+    carsLoadError = "Supabase не завантажив авто. Перевір підключення або таблицю cars.";
+    remoteCars = [];
     carsLoading = false;
+    supabaseCarsLoaded = true;
     render();
   }
-}
-
-async function seedDefaultCars() {
-  const payload = defaultCars.map(carToRow);
-  const rows = await supabaseRequest(`/rest/v1/${SUPABASE_CARS_TABLE}?select=*`, {
-    method: "POST",
-    headers: { Prefer: "return=representation" },
-    body: JSON.stringify(payload),
-  });
-  return Array.isArray(rows) ? rows : [];
 }
 
 function rowToCar(row) {
@@ -553,14 +546,13 @@ function icon(name) {
 }
 
 function allCars() {
-  if (remoteCars.length) {
+  // Після підключення Supabase джерело правди тільки база.
+  // Навіть якщо в базі 0 авто, не підставляємо demo/localStorage авто — так видалення працює в усіх вкладках.
+  if (supabaseCarsLoaded || !carsLoading) {
     return [...remoteCars].sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt));
   }
 
-  const adminCars = readJson(STORAGE.cars, []);
-  const carsById = new Map(defaultCars.map((car) => [car.id, car]));
-  adminCars.forEach((car) => carsById.set(car.id, car));
-  return [...carsById.values()].sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt));
+  return [];
 }
 
 function favorites() {

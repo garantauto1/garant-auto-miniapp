@@ -301,30 +301,16 @@ async function loadCarsFromSupabase() {
     let rows = await supabaseRequest(`/rest/v1/${SUPABASE_CARS_TABLE}?select=*&order=created_at.desc`);
     if (!Array.isArray(rows)) rows = [];
 
-    if (!rows.length) {
-      rows = await seedDefaultCars();
-      showToast("Каталог додано в Supabase");
-    }
-
+    // Не додаємо demo-авто автоматично. Якщо адмін видалив машину, вона не має повертатися після оновлення.
     carsCache = rows.map(rowToCar).filter(Boolean);
     carsReady = true;
     renderList();
   } catch (error) {
     console.error("Supabase load failed", error);
     carsReady = false;
-    carsCache = [...defaultCars];
+    carsCache = [];
     renderList("Не вдалося підключитися до Supabase. Перевір SQL-таблицю cars, bucket car-photos і policies.");
   }
-}
-
-async function seedDefaultCars() {
-  const payload = defaultCars.map(carToRow);
-  const rows = await supabaseRequest(`/rest/v1/${SUPABASE_CARS_TABLE}?select=*`, {
-    method: "POST",
-    headers: { Prefer: "return=representation" },
-    body: JSON.stringify(payload),
-  });
-  return Array.isArray(rows) ? rows : [];
 }
 
 async function onSubmitCar(event) {
@@ -390,9 +376,14 @@ async function onDeleteCurrentCar() {
     deleting = true;
     setDeleteState(true);
 
-    await supabaseRequest(`/rest/v1/${SUPABASE_CARS_TABLE}?id=eq.${encodeURIComponent(car.id)}`, {
+    const deletedRows = await supabaseRequest(`/rest/v1/${SUPABASE_CARS_TABLE}?id=eq.${encodeURIComponent(car.id)}&select=id`, {
       method: "DELETE",
+      headers: { Prefer: "return=representation" },
     });
+
+    if (!Array.isArray(deletedRows)) {
+      throw new Error("Supabase не підтвердив видалення авто");
+    }
 
     await deleteCarPhotosFromStorage(car);
 
@@ -400,7 +391,10 @@ async function onDeleteCurrentCar() {
     renderList();
     clearEditor();
     showList();
-    showToast("Авто видалено з каталогу");
+
+    // Перечитуємо каталог з Supabase, щоб після оновлення та в усіх вкладках не залишалися ghost-карточки.
+    await loadCarsFromSupabase();
+    showToast("Авто повністю видалено з каталогу");
   } catch (error) {
     console.error("Delete car failed", error);
     showToast("Помилка видалення. Перевір Supabase delete policy.");
