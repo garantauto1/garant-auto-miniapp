@@ -1,852 +1,481 @@
-const HOUR = 60 * 60 * 1000;
+(() => {
+  const KEY = "chipdale:adminCars";
+  const VERSION = "20260704a2";
+  const ASSET = "assets/";
+  const SUPABASE = window.CHIPDALE_SUPABASE_CONFIG || null;
 
-const defaultCars = [
-  {
-    id: "bmw-x5-40i",
-    title: "BMW X5 xDrive40i M Sport",
-    make: "BMW",
-    model: "X5",
-    year: 2021,
-    mileage: 45700,
-    city: "Київ",
-    price: 68750,
-    fuel: "Бензин",
-    gearbox: "Автомат",
-    body: "Позашляховик",
-    engine: "3.0 л",
-    status: "В наявності",
-    verified: true,
-    addedAt: new Date(Date.now() - 8 * HOUR).toISOString(),
-    cover: "https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=900&q=86",
-    photos: [
-      "https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=1200&q=88",
-      "https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?auto=format&fit=crop&w=1200&q=86",
-      "https://images.unsplash.com/photo-1502877338535-766e1452684a?auto=format&fit=crop&w=1200&q=86",
-      "https://images.unsplash.com/photo-1553440569-bcc63803a83d?auto=format&fit=crop&w=1200&q=86",
-      "https://images.unsplash.com/photo-1517524008697-84bbe3c3fd98?auto=format&fit=crop&w=1200&q=86",
-    ],
-    description:
-      "Офіційний автомобіль, куплений новим в Україні. Один власник. Повна сервісна історія на офіційному СТО. Без ДТП та підфарбувань. Ідеальний стан як технічно, так і візуально. Максимальна комплектація M Sport.",
-  },
-  {
-    id: "mercedes-e220d",
-    title: "Mercedes-Benz E 220 d",
-    make: "Mercedes-Benz",
-    model: "E-Class",
-    year: 2020,
-    mileage: 57300,
-    city: "Львів",
-    price: 47250,
-    fuel: "Дизель",
-    gearbox: "Автомат",
-    body: "Седан",
-    engine: "2.0 л",
-    status: "В наявності",
-    verified: true,
-    addedAt: new Date(Date.now() - 26 * HOUR).toISOString(),
-    cover: "https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&w=900&q=86",
-    photos: [
-      "https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&w=1200&q=88",
-      "https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&w=1200&q=86",
-      "https://images.unsplash.com/photo-1523983388277-336a66bf9bcd?auto=format&fit=crop&w=1200&q=86",
-      "https://images.unsplash.com/photo-1551830820-330a71b99659?auto=format&fit=crop&w=1200&q=86",
-      "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=1200&q=86",
-    ],
-    description:
-      "Комфортний бізнес-седан з економним дизельним двигуном. Авто перевірене по базах, має прозору історію та охайний салон. Готове до будь-якої додаткової перевірки.",
-  },
-  {
-    id: "audi-q7-45tdi",
-    title: "Audi Q7 45 TDI",
-    make: "Audi",
-    model: "Q7",
-    year: 2020,
-    mileage: 74200,
-    city: "Одеса",
-    price: 53750,
-    fuel: "Дизель",
-    gearbox: "Автомат",
-    body: "Позашляховик",
-    engine: "3.0 л",
-    status: "В наявності",
-    verified: true,
-    addedAt: new Date(Date.now() - 64 * HOUR).toISOString(),
-    cover: "https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?auto=format&fit=crop&w=900&q=86",
-    photos: [
-      "https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?auto=format&fit=crop&w=1200&q=88",
-      "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=1200&q=86",
-      "https://images.unsplash.com/photo-1555353540-64580b51c258?auto=format&fit=crop&w=1200&q=86",
-      "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=1200&q=86",
-      "https://images.unsplash.com/photo-1553440569-bcc63803a83d?auto=format&fit=crop&w=1200&q=86",
-    ],
-    description:
-      "Сімейний SUV з повним приводом, багатою комплектацією та регулярним обслуговуванням. Кузов без критичних пошкоджень, технічна частина без зауважень.",
-  },
-  {
-    id: "lexus-rx350",
-    title: "Lexus RX 350",
-    make: "Lexus",
-    model: "RX",
-    year: 2019,
-    mileage: 82100,
-    city: "Дніпро",
-    price: 48750,
-    fuel: "Бензин",
-    gearbox: "Автомат",
-    body: "Кросовер",
-    engine: "3.5 л",
-    status: "В наявності",
-    verified: true,
-    addedAt: new Date(Date.now() - 36 * HOUR).toISOString(),
-    cover: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=900&q=86",
-    photos: [
-      "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=1200&q=88",
-      "https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&w=1200&q=86",
-      "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=1200&q=86",
-      "https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=1200&q=86",
-      "https://images.unsplash.com/photo-1542362567-b07e54358753?auto=format&fit=crop&w=1200&q=86",
-    ],
-    description:
-      "Надійний преміальний кросовер у доглянутому стані. Всі вузли перевірені, ходова тиха, салон чистий. Підійде для міста та далеких поїздок.",
-  },
-  {
-    id: "porsche-macan-s",
-    title: "Porsche Macan S",
-    make: "Porsche",
-    model: "Macan",
-    year: 2018,
-    mileage: 49800,
-    city: "Київ",
-    price: 58750,
-    fuel: "Бензин",
-    gearbox: "Автомат",
-    body: "Кросовер",
-    engine: "3.0 л",
-    status: "В наявності",
-    verified: true,
-    addedAt: new Date(Date.now() - 80 * HOUR).toISOString(),
-    cover: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=900&q=86",
-    photos: [
-      "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&q=88",
-      "https://images.unsplash.com/photo-1544636331-e26879cd4d9b?auto=format&fit=crop&w=1200&q=86",
-      "https://images.unsplash.com/photo-1517524008697-84bbe3c3fd98?auto=format&fit=crop&w=1200&q=86",
-      "https://images.unsplash.com/photo-1525609004556-c46c7d6cf023?auto=format&fit=crop&w=1200&q=86",
-      "https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&w=1200&q=86",
-    ],
-    description:
-      "Динамічний кросовер з живим мотором та акуратним салоном. Автомобіль проходив планове обслуговування, готовий до тест-драйву та перевірки.",
-  },
-  {
-    id: "range-rover-velar",
-    title: "Range Rover Velar P250",
-    make: "Land Rover",
-    model: "Range Rover Velar",
-    year: 2021,
-    mileage: 61000,
-    city: "Харків",
-    price: 69750,
-    fuel: "Бензин",
-    gearbox: "Автомат",
-    body: "Позашляховик",
-    engine: "2.0 л",
-    status: "В наявності",
-    verified: true,
-    addedAt: new Date(Date.now() - 14 * HOUR).toISOString(),
-    cover: "https://images.unsplash.com/photo-1553440569-bcc63803a83d?auto=format&fit=crop&w=900&q=86",
-    photos: [
-      "https://images.unsplash.com/photo-1553440569-bcc63803a83d?auto=format&fit=crop&w=1200&q=88",
-      "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=1200&q=86",
-      "https://images.unsplash.com/photo-1517524008697-84bbe3c3fd98?auto=format&fit=crop&w=1200&q=86",
-      "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=1200&q=86",
-      "https://images.unsplash.com/photo-1542362567-b07e54358753?auto=format&fit=crop&w=1200&q=86",
-    ],
-    description:
-      "Стильний преміальний SUV з якісною комплектацією. Пройдено повну діагностику, підтверджений пробіг, кузов та салон у відмінному стані.",
-  },
-  {
-    id: "audi-a6-45tfsi",
-    title: "Audi A6 45 TFSI",
-    make: "Audi",
-    model: "A6",
-    year: 2020,
-    mileage: 38700,
-    city: "Київ",
-    price: 43750,
-    fuel: "Бензин",
-    gearbox: "Автомат",
-    body: "Седан",
-    engine: "2.0 л",
-    status: "В наявності",
-    verified: true,
-    addedAt: new Date(Date.now() - 52 * HOUR).toISOString(),
-    cover: "https://images.unsplash.com/photo-1616788494672-ec7ca25fdda9?auto=format&fit=crop&w=900&q=86",
-    photos: [
-      "https://images.unsplash.com/photo-1616788494672-ec7ca25fdda9?auto=format&fit=crop&w=1200&q=88",
-      "https://images.unsplash.com/photo-1502877338535-766e1452684a?auto=format&fit=crop&w=1200&q=86",
-      "https://images.unsplash.com/photo-1610647752706-3bb12232b3cf?auto=format&fit=crop&w=1200&q=86",
-      "https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?auto=format&fit=crop&w=1200&q=86",
-      "https://images.unsplash.com/photo-1523983388277-336a66bf9bcd?auto=format&fit=crop&w=1200&q=86",
-    ],
-    description:
-      "Сучасний седан з приємною динамікою та комфортною підвіскою. Авто має гарну історію, чистий салон і готове до щоденної експлуатації.",
-  },
-  {
-    id: "mercedes-gle300d",
-    title: "Mercedes-Benz GLE 300d",
-    make: "Mercedes-Benz",
-    model: "GLE",
-    year: 2021,
-    mileage: 61200,
-    city: "Тернопіль",
-    price: 61250,
-    fuel: "Дизель",
-    gearbox: "Автомат",
-    body: "Позашляховик",
-    engine: "2.0 л",
-    status: "В наявності",
-    verified: true,
-    addedAt: new Date(Date.now() - 6 * HOUR).toISOString(),
-    cover: "https://images.unsplash.com/photo-1549927681-0b673b8243ab?auto=format&fit=crop&w=900&q=86",
-    photos: [
-      "https://images.unsplash.com/photo-1549927681-0b673b8243ab?auto=format&fit=crop&w=1200&q=88",
-      "https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&w=1200&q=86",
-      "https://images.unsplash.com/photo-1551830820-330a71b99659?auto=format&fit=crop&w=1200&q=86",
-      "https://images.unsplash.com/photo-1563720223185-11003d516935?auto=format&fit=crop&w=1200&q=86",
-      "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=1200&q=86",
-    ],
-    description:
-      "Комфортний та економний GLE з підтвердженою історією. Автомобіль після комплексної перевірки, без прихованих дефектів і готовий до оформлення.",
-  },
-];
+  const catalogNode = document.getElementById("adminCatalog");
+  const editorWrap = document.getElementById("editorWrap");
+  const toastNode = document.getElementById("toast");
+  const addBtn = document.getElementById("addBtn");
+  const backBtn = document.getElementById("backBtn");
 
-const routes = [
-  { id: "showroom", label: "Showroom", icon: "car" },
-  { id: "catalog", label: "Каталог", icon: "grid" },
-  { id: "new", label: "Новинки", icon: "star" },
-  { id: "favorites", label: "Обране", icon: "heart" },
-];
-
-
-const SUPABASE_URL = "https://qxlerdtnibglxwluazup.supabase.co";
-const SUPABASE_KEY = "sb_publishable__-J2w7Ysxu-_Dqn4lH9fFg_msVAnv7P";
-const SUPABASE_CARS_TABLE = "cars";
-const SUPABASE_BUCKET = "car-photos";
-
-const demoCover = "https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=900&q=86";
-
-const listView = document.querySelector('[data-admin-view="list"]');
-const editorView = document.querySelector('[data-admin-view="editor"]');
-const form = document.querySelector("[data-car-form]");
-const list = document.querySelector("[data-admin-list]");
-const formTitle = document.querySelector("[data-form-title]");
-const photoInput = document.querySelector("[data-photo-input]");
-const photoGrid = document.querySelector("[data-photo-grid]");
-const coverInput = document.querySelector("[data-cover-input]");
-const photosInput = document.querySelector("[data-photos-input]");
-const deleteCarButton = document.querySelector("[data-delete-car]");
-const adminActions = document.querySelector("[data-admin-actions]");
-
-let toastTimer = null;
-let currentPhotos = [];
-let carsCache = [];
-let carsReady = false;
-let saving = false;
-let deleting = false;
-
-bindStaticEvents();
-renderLoading();
-loadCarsFromSupabase();
-showList();
-
-function bindStaticEvents() {
-  form.addEventListener("submit", onSubmitCar);
-
-  document.querySelectorAll("[data-add-car], [data-add-car-secondary]").forEach((button) => {
-    button.addEventListener("click", () => openEditor());
-  });
-
-  document.querySelector("[data-back-to-list]").addEventListener("click", showList);
-  document.querySelector("[data-reset-form]").addEventListener("click", clearEditor);
-  deleteCarButton?.addEventListener("click", onDeleteCurrentCar);
-
-  photoInput.addEventListener("change", onPhotosSelected);
-}
-
-function supabaseHeaders(extra = {}) {
-  return {
-    apikey: SUPABASE_KEY,
-    Authorization: `Bearer ${SUPABASE_KEY}`,
-    "Content-Type": "application/json",
-    ...extra,
+  const statusLabels = {
+    sale: "В продажу",
+    commission: "Комісійний продаж",
+    booked: "Бронь",
+    sold: "Продано"
   };
-}
 
-async function supabaseRequest(path, options = {}) {
-  const response = await fetch(`${SUPABASE_URL}${path}`, {
-    ...options,
-    headers: supabaseHeaders(options.headers || {}),
-  });
+  const statusClasses = {
+    sale: "sale",
+    commission: "commission",
+    booked: "booked",
+    sold: "sold"
+  };
 
-  if (!response.ok) {
-    const details = await response.text().catch(() => "");
-    throw new Error(details || `Supabase error ${response.status}`);
+  const galleryPhotos = (id) =>
+    Array.from({ length: 12 }, (_, index) => `${ASSET}gallery/${id}-${String(index + 1).padStart(2, "0")}.jpg?v=${VERSION}`);
+
+  const seedCars = [
+    carSeed("bmw-x5-2002", "BMW X5 2002", "BMW", "X5", 2002, "$ 9 999", "4.4 газ/бензин", "gas", "suv", "sale", "Технічно справний, повний привід, комфортний салон. Готовий до перевірок на СТО."),
+    carSeed("honda-crv-2006", "Honda CR-V 2006", "Honda", "CR-V", 2006, "$ 8 100", "2.4 газ/бензин", "gas", "suv", "commission", "Сімейний кросовер з прозорою історією, охайним салоном та готовністю до перевірки."),
+    carSeed("bmw-f10-535-2014", "BMW F10 535 2014", "BMW", "F10 535", 2014, "$ 13 599", "3.0 бензин", "petrol", "sedan", "commission", "Динамічний седан з багатою комплектацією, акуратним кузовом та сервісною історією."),
+    carSeed("citroen-c5-2010", "Citroen C5 2010", "Citroen", "C5", 2010, "$ 4 650", "2.0 дизель", "diesel", "sedan", "sale", "Комфортний автомобіль для міста і траси, економічний дизель та плавна автоматична коробка."),
+    carSeed("bmw-730d-f01-2010", "BMW 730d F01 2010", "BMW", "730d F01", 2010, "$ 11 800", "3.0 дизель", "diesel", "sedan", "sold", "Представницький седан з комфортним салоном, потужним дизелем та перевіреною комплектацією.")
+  ];
+
+  let cars = [];
+  let activeIndex = null;
+
+  function carSeed(id, title, brand, model, year, price, engine, fuelKey, body, status, description) {
+    const photos = galleryPhotos(id);
+    const fuel = engine.replace(/^\S+\s/, "");
+    return {
+      id,
+      title,
+      brand,
+      model,
+      year,
+      price,
+      credit: "В кредит від $ 180/міс",
+      status,
+      fuel,
+      fuelKey,
+      engine,
+      gearbox: "Автомат",
+      gearboxKey: "auto",
+      mileage: "296 тис. км",
+      city: "Київ",
+      body,
+      image: photos[0],
+      detailImage: photos[0],
+      featuredImage: photos[0],
+      photos,
+      description
+    };
   }
 
-  if (response.status === 204) return null;
-  return response.json();
-}
-
-async function loadCarsFromSupabase() {
-  try {
-    let rows = await supabaseRequest(`/rest/v1/${SUPABASE_CARS_TABLE}?select=*&order=created_at.desc`);
-    if (!Array.isArray(rows)) rows = [];
-
-    // Не додаємо demo-авто автоматично. Якщо адмін видалив машину, вона не має повертатися після оновлення.
-    carsCache = rows.map(rowToCar).filter(Boolean);
-    carsReady = true;
-    renderList();
-  } catch (error) {
-    console.error("Supabase load failed", error);
-    carsReady = false;
-    carsCache = [];
-    renderList("Не вдалося підключитися до Supabase. Перевір SQL-таблицю cars, bucket car-photos і policies.");
+  function dbHeaders(prefer) {
+    if (!SUPABASE || !SUPABASE.url || !SUPABASE.key) return null;
+    const headers = {
+      "apikey": SUPABASE.key,
+      "Authorization": "Bearer " + SUPABASE.key,
+      "Content-Type": "application/json"
+    };
+    if (prefer) headers.Prefer = prefer;
+    return headers;
   }
-}
 
-async function onSubmitCar(event) {
-  event.preventDefault();
-  if (saving) return;
+  function dbUrl(path) {
+    return SUPABASE.url.replace(/\/$/, "") + "/rest/v1/" + path;
+  }
 
-  try {
-    saving = true;
-    syncPhotoInputs();
-    setSubmitState(true);
+  function clone(value) {
+    return JSON.parse(JSON.stringify(value));
+  }
 
-    const formData = new FormData(form);
-    const raw = Object.fromEntries(formData.entries());
-    const existing = getCarById(raw.id);
-    const car = normalizeCar(raw, existing);
-    const rowPayload = carToRow(car);
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;");
+  }
 
-    let savedRows;
-    if (existing?.id) {
-      savedRows = await supabaseRequest(`/rest/v1/${SUPABASE_CARS_TABLE}?id=eq.${encodeURIComponent(existing.id)}&select=*`, {
-        method: "PATCH",
-        headers: { Prefer: "return=representation" },
-        body: JSON.stringify(rowPayload),
-      });
-    } else {
-      savedRows = await supabaseRequest(`/rest/v1/${SUPABASE_CARS_TABLE}?select=*`, {
-        method: "POST",
-        headers: { Prefer: "return=representation" },
-        body: JSON.stringify(rowPayload),
-      });
+  function slug(value) {
+    return String(value || "auto")
+      .toLowerCase()
+      .replace(/[^\wа-яіїєґ]+/gi, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 60) || "auto";
+  }
+
+  function normalizeCar(car, fallback = {}) {
+    const photos = Array.isArray(car.photos) && car.photos.length
+      ? car.photos
+      : Array.isArray(car.gallery) && car.gallery.length
+        ? car.gallery
+        : fallback.photos || [];
+
+    return {
+      id: car.id,
+      title: car.title || fallback.title || "",
+      brand: car.brand || fallback.brand || "",
+      model: car.model || fallback.model || "",
+      year: Number(car.year || fallback.year || new Date().getFullYear()),
+      price: car.price || fallback.price || "",
+      credit: car.credit || fallback.credit || "",
+      status: car.status || fallback.status || "sale",
+      fuel: car.fuel || fallback.fuel || "",
+      fuelKey: car.fuel_key || car.fuelKey || fallback.fuelKey || "",
+      engine: car.engine || fallback.engine || "",
+      gearbox: car.gearbox || car.transmission || fallback.gearbox || "",
+      gearboxKey: car.gearbox_key || car.gearboxKey || fallback.gearboxKey || "",
+      mileage: car.mileage || fallback.mileage || "",
+      city: car.city || fallback.city || "",
+      body: car.body || fallback.body || "",
+      image: car.image || photos[0] || fallback.image || "",
+      detailImage: car.detail_image || car.detailImage || car.image || photos[0] || fallback.detailImage || "",
+      featuredImage: car.featured_image || car.featuredImage || car.image || photos[0] || fallback.featuredImage || "",
+      photos,
+      description: car.description || fallback.description || ""
+    };
+  }
+
+  function carToDb(car) {
+    const photos = (car.photos || []).filter(Boolean);
+    return {
+      id: car.id,
+      title: car.title,
+      brand: car.brand,
+      model: car.model,
+      year: Number(car.year) || null,
+      price: car.price,
+      credit: car.credit,
+      status: car.status,
+      fuel: car.fuel,
+      fuel_key: car.fuelKey,
+      engine: car.engine,
+      gearbox: car.gearbox,
+      gearbox_key: car.gearboxKey,
+      mileage: car.mileage,
+      city: car.city,
+      body: car.body,
+      image: photos[0] || car.image,
+      detail_image: photos[0] || car.detailImage,
+      featured_image: photos[0] || car.featuredImage,
+      photos,
+      gallery: photos,
+      description: car.description
+    };
+  }
+
+  async function loadCars() {
+    const headers = dbHeaders();
+
+    if (!headers) {
+      cars = clone(seedCars);
+      renderCatalog();
+      showToast("Supabase config не знайдено. Працюємо локально.");
+      return;
     }
 
-    const savedCar = rowToCar(Array.isArray(savedRows) ? savedRows[0] : savedRows);
-    if (!savedCar) throw new Error("Supabase не повернув авто після збереження");
+    try {
+      const response = await fetch(dbUrl((SUPABASE.table || "cars") + "?select=*&order=created_at.asc"), {
+        headers,
+        cache: "no-store"
+      });
 
-    carsCache = [savedCar, ...carsCache.filter((item) => item.id !== savedCar.id)];
-    renderList();
-    showList();
-    showToast(existing ? "Авто збережено в Supabase" : "Авто додано в Supabase");
-  } catch (error) {
-    console.error("Save car failed", error);
-    showToast("Помилка збереження. Перевір Supabase policies.");
-  } finally {
-    saving = false;
-    setSubmitState(false);
+      if (!response.ok) throw new Error(await response.text());
+
+      const rows = await response.json();
+      if (!rows.length) {
+        cars = clone(seedCars);
+        await upsertCars(cars, false);
+      } else {
+        const fallbackById = Object.fromEntries(seedCars.map((car) => [car.id, car]));
+        cars = rows.map((row) => normalizeCar(row, fallbackById[row.id])).filter((car) => car.id);
+      }
+
+      localStorage.setItem(KEY, JSON.stringify(cars));
+      renderCatalog();
+    } catch (error) {
+      console.error(error);
+      const local = JSON.parse(localStorage.getItem(KEY) || "null");
+      cars = Array.isArray(local) && local.length ? local : clone(seedCars);
+      renderCatalog();
+      showToast("Не вдалося завантажити Supabase. Показую локальні дані.");
+    }
   }
-}
 
-async function onDeleteCurrentCar() {
-  if (deleting || saving) return;
+  async function upsertCars(items, withToast = true) {
+    const headers = dbHeaders("resolution=merge-duplicates");
+    if (!headers) {
+      localStorage.setItem(KEY, JSON.stringify(items));
+      if (withToast) showToast("Збережено локально.");
+      return;
+    }
 
-  const carId = form.elements.id.value;
-  const car = getCarById(carId);
-  if (!car?.id) {
-    showToast("Спочатку відкрий авто з каталогу");
-    return;
-  }
-
-  const confirmed = window.confirm(`Видалити авто «${car.title || "без назви"}» з каталогу повністю?`);
-  if (!confirmed) return;
-
-  try {
-    deleting = true;
-    setDeleteState(true);
-
-    const deletedRows = await supabaseRequest(`/rest/v1/${SUPABASE_CARS_TABLE}?id=eq.${encodeURIComponent(car.id)}&select=id`, {
-      method: "DELETE",
-      headers: { Prefer: "return=representation" },
+    const response = await fetch(dbUrl(SUPABASE.table || "cars"), {
+      method: "POST",
+      headers,
+      body: JSON.stringify(items.map(carToDb))
     });
 
-    if (!Array.isArray(deletedRows)) {
-      throw new Error("Supabase не підтвердив видалення авто");
-    }
-
-    await deleteCarPhotosFromStorage(car);
-
-    carsCache = carsCache.filter((item) => String(item.id) !== String(car.id));
-    renderList();
-    clearEditor();
-    showList();
-
-    // Перечитуємо каталог з Supabase, щоб після оновлення та в усіх вкладках не залишалися ghost-карточки.
-    await loadCarsFromSupabase();
-    showToast("Авто повністю видалено з каталогу");
-  } catch (error) {
-    console.error("Delete car failed", error);
-    showToast("Помилка видалення. Перевір Supabase delete policy.");
-  } finally {
-    deleting = false;
-    setDeleteState(false);
+    if (!response.ok) throw new Error(await response.text());
+    localStorage.setItem(KEY, JSON.stringify(items));
+    if (withToast) showToast("Збережено в Supabase.");
   }
-}
 
-async function deleteCarPhotosFromStorage(car) {
-  const paths = uniquePhotos([car.cover, ...(car.photos || [])])
-    .map(getStoragePathFromPublicUrl)
-    .filter(Boolean);
+  async function deleteCarFromDb(car) {
+    const headers = dbHeaders();
+    if (!headers) return;
 
-  if (!paths.length) return;
-
-  try {
-    const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}`, {
+    const response = await fetch(dbUrl((SUPABASE.table || "cars") + "?id=eq." + encodeURIComponent(car.id)), {
       method: "DELETE",
-      headers: supabaseHeaders(),
-      body: JSON.stringify({ prefixes: paths }),
+      headers
     });
 
-    if (!response.ok) {
-      const details = await response.text().catch(() => "");
-      console.warn("Storage photos were not deleted", details || response.status);
-    }
-  } catch (error) {
-    console.warn("Storage photos were not deleted", error);
-  }
-}
-
-function getStoragePathFromPublicUrl(url) {
-  const value = String(url || "");
-  const marker = `/storage/v1/object/public/${SUPABASE_BUCKET}/`;
-  const index = value.indexOf(marker);
-  if (index === -1) return "";
-
-  return decodeURIComponent(value.slice(index + marker.length));
-}
-
-async function onPhotosSelected(event) {
-  const files = [...event.target.files].filter((file) => file.type.startsWith("image/"));
-  if (!files.length) return;
-
-  try {
-    showToast("Завантажую фото...");
-    const uploaded = [];
-
-    for (const file of files) {
-      uploaded.push(await uploadPhotoFile(file));
-    }
-
-    currentPhotos = uniquePhotos([...currentPhotos, ...uploaded]);
-    renderPhotoGrid();
-    syncPhotoInputs();
-    showToast("Фото додано");
-  } catch (error) {
-    console.error("Photo upload failed", error);
-    showToast("Фото не завантажилось. Перевір bucket car-photos.");
-  } finally {
-    photoInput.value = "";
-  }
-}
-
-async function uploadPhotoFile(file) {
-  const safeName = makeSafeFileName(file.name);
-  const path = `car-${Date.now()}-${Math.random().toString(16).slice(2)}-${safeName}`;
-  const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${path}`, {
-    method: "POST",
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      "x-upsert": "true",
-      "Content-Type": file.type || "application/octet-stream",
-    },
-    body: file,
-  });
-
-  if (!response.ok) {
-    const details = await response.text().catch(() => "");
-    throw new Error(details || `Storage error ${response.status}`);
+    if (!response.ok) throw new Error(await response.text());
   }
 
-  return `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${path}`;
-}
+  function renderCatalog() {
+    activeIndex = null;
+    editorWrap.hidden = true;
+    catalogNode.hidden = false;
+    backBtn.hidden = true;
+    addBtn.hidden = false;
 
-function makeSafeFileName(name) {
-  const clean = String(name || "photo.jpg")
-    .toLowerCase()
-    .replace(/[^a-z0-9.]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
-  return clean || "photo.jpg";
-}
-
-function allCarsForAdmin() {
-  return [...carsCache].sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt));
-}
-
-function getCarById(id) {
-  if (!id) return null;
-  return allCarsForAdmin().find((car) => String(car.id) === String(id)) || null;
-}
-
-function rowToCar(row) {
-  if (!row) return null;
-  const photos = Array.isArray(row.image_urls) ? row.image_urls.filter(Boolean) : parsePhotos(row.image_urls);
-  const cover = row.image_url || photos[0] || demoCover;
-
-  return {
-    id: String(row.id),
-    title: row.name || "Авто без назви",
-    make: row.brand || "",
-    model: row.model || "",
-    year: Number(row.year) || new Date().getFullYear(),
-    mileage: mileageFromStorage(row.mileage),
-    city: row.city || "",
-    price: priceToUsd(row.price),
-    fuel: row.fuel || "",
-    gearbox: row.gearbox || "",
-    body: row.body || "",
-    engine: row.engine || "",
-    status: row.status || "В наявності",
-    verified: true,
-    addedAt: row.created_at || new Date().toISOString(),
-    cover,
-    photos: photos.length ? photos : [cover],
-    description: row.description || "",
-  };
-}
-
-function carToRow(car) {
-  const photos = Array.isArray(car.photos) ? car.photos.filter(Boolean) : [];
-  const cover = car.cover || photos[0] || demoCover;
-
-  return {
-    name: car.title || "Авто без назви",
-    brand: car.make || "",
-    model: car.model || "",
-    price: String(car.price || ""),
-    year: Number(car.year) || null,
-    mileage: String(car.mileage || ""),
-    city: car.city || "",
-    fuel: car.fuel || "",
-    gearbox: car.gearbox || "",
-    body: car.body || "",
-    engine: car.engine || "",
-    status: car.status || "В наявності",
-    description: car.description || "",
-    image_url: cover,
-    image_urls: photos.length ? photos : [cover],
-  };
-}
-
-function normalizeCar(raw, existing) {
-  const photos = parsePhotos(raw.photos);
-  const cover = photos[0] || raw.cover || existing?.cover || demoCover;
-
-  return {
-    id: existing?.id || raw.id || "",
-    title: String(raw.title || "").trim(),
-    make: String(raw.make || "").trim(),
-    model: String(raw.model || "").trim(),
-    year: Number(raw.year),
-    mileage: mileageFromInput(raw.mileage),
-    city: String(raw.city || "").trim(),
-    price: priceToUsd(raw.price),
-    fuel: raw.fuel || "",
-    gearbox: raw.gearbox || "",
-    body: String(raw.body || "").trim(),
-    engine: String(raw.engine || "").trim(),
-    status: raw.status || "В наявності",
-    verified: existing?.verified ?? true,
-    addedAt: existing?.addedAt || new Date().toISOString(),
-    cover,
-    photos: photos.length ? photos : [cover],
-    description: String(raw.description || "").trim(),
-  };
-}
-
-function parsePhotos(value) {
-  if (!value) return [];
-  if (Array.isArray(value)) return value.filter(Boolean);
-  try {
-    const parsed = JSON.parse(value);
-    return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
-  } catch {
-    return String(value)
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean);
-  }
-}
-
-function numberFromValue(value) {
-  if (typeof value === "number") return value;
-  const cleaned = String(value || "").replace(/[^0-9]/g, "");
-  return Number(cleaned) || 0;
-}
-
-function mileageFromStorage(value) {
-  const number = numberFromValue(value);
-  // Якщо раніше в адмінці випадково зберегли 225 замість 225000, читаємо це як 225 тис. км.
-  return number > 0 && number <= 999 ? number * 1000 : number;
-}
-
-function decimalNumberFromValue(value) {
-  if (typeof value === "number") return value;
-  const normalized = String(value || "")
-    .replace(",", ".")
-    .replace(/[^0-9.]/g, "");
-  return Number.parseFloat(normalized) || 0;
-}
-
-function mileageFromInput(value) {
-  const number = decimalNumberFromValue(value);
-  if (!number) return 0;
-  // В адмінці поле тепер у тисячах км: 225 = 225 000 км.
-  return number <= 999 ? Math.round(number * 1000) : Math.round(number);
-}
-
-function mileageInputFromKm(value) {
-  const km = Number(value) || 0;
-  if (!km) return "";
-  const thousands = km >= 1000 ? km / 1000 : km;
-  return Number.isInteger(thousands) ? String(thousands) : String(Number(thousands.toFixed(1)));
-}
-
-function priceToUsd(value) {
-  const number = numberFromValue(value);
-  // Старі записи могли залишитися в гривнях. У адмінці показуємо єдину валюту — долари.
-  return number > 300000 ? Math.round(number / 40) : number;
-}
-
-function renderLoading() {
-  list.innerHTML = `<div class="empty-state"><div><h2>Завантажую авто...</h2><p>Підключаю каталог із Supabase.</p></div></div>`;
-}
-
-function renderList(errorMessage = "") {
-  const cars = allCarsForAdmin();
-
-  if (!cars.length) {
-    list.innerHTML = `
-      <div class="empty-state">
-        <div>
-          <h2>Авто ще немає</h2>
-          <p>${errorMessage || "Натисни Додати авто, щоб створити першу карточку."}</p>
+    catalogNode.innerHTML = cars.map((car, index) => `
+      <article class="admin-car-card" data-index="${index}" role="button" tabindex="0">
+        <img src="${escapeHtml((car.photos && car.photos[0]) || car.image)}" alt="${escapeHtml(car.title)}" />
+        <span class="status-badge ${statusClasses[car.status] || ""}">${statusLabels[car.status] || car.status}</span>
+        <div class="admin-car-card-body">
+          <h2>${escapeHtml(car.title)}</h2>
+          <p>${escapeHtml(car.year)} · ${escapeHtml(car.mileage)} · ${escapeHtml(car.city)}</p>
+          <strong class="admin-card-price">${escapeHtml(car.price)}</strong>
         </div>
+      </article>
+    `).join("");
+  }
+
+  function renderEditor(index) {
+    activeIndex = index;
+    const car = cars[index];
+    catalogNode.hidden = true;
+    editorWrap.hidden = false;
+    backBtn.hidden = false;
+    addBtn.hidden = true;
+
+    editorWrap.innerHTML = `
+      <article class="editor-card" data-index="${index}">
+        <div class="editor-top">
+          <div class="editor-preview">
+            <img src="${escapeHtml((car.photos && car.photos[0]) || car.image)}" alt="${escapeHtml(car.title)}" />
+            <div>
+              <h2>${escapeHtml(car.title || "Нове авто")}</h2>
+              <p>${escapeHtml(car.price || "$ 0")} · ${(car.photos || []).length} фото</p>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            ${field("title", "Назва", car.title)}
+            ${field("brand", "Марка", car.brand)}
+            ${field("model", "Модель", car.model)}
+            ${field("year", "Рік", car.year)}
+            ${field("price", "Ціна", car.price)}
+            ${field("credit", "Кредит", car.credit)}
+            ${field("city", "Місто", car.city)}
+            ${field("engine", "Двигун", car.engine)}
+            ${field("fuel", "Паливо", car.fuel)}
+            ${field("mileage", "Пробіг", car.mileage)}
+            ${field("gearbox", "Коробка", car.gearbox)}
+            <div class="field">
+              <label>Статус</label>
+              <select data-field="status">
+                ${option("sale", "В продажу", car.status)}
+                ${option("commission", "Комісійний продаж", car.status)}
+                ${option("booked", "Бронь", car.status)}
+                ${option("sold", "Продано", car.status)}
+              </select>
+            </div>
+            <div class="field wide">
+              <label>Опис</label>
+              <textarea data-field="description">${escapeHtml(car.description)}</textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="photos-editor">
+          <div class="photos-title">Фото авто</div>
+          <div class="photos-grid">
+            ${(car.photos || []).map((src, photoIndex) => `
+              <div class="photo-tile" data-photo-index="${photoIndex}">
+                <img src="${escapeHtml(src)}" alt="" />
+                <button class="photo-remove" type="button" data-action="remove-photo" data-photo-index="${photoIndex}" aria-label="Видалити фото">×</button>
+              </div>
+            `).join("")}
+            <label class="photo-add">
+              <input type="file" accept="image/*" multiple data-action="add-photos" />
+              <span><b>+</b>Додати фото</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="editor-actions">
+          <button class="primary" type="button" data-action="save-car">Зберегти</button>
+          <button class="danger" type="button" data-action="delete-car">Видалити авто</button>
+          <button class="ghost" type="button" data-action="back-catalog">Назад до каталогу</button>
+        </div>
+      </article>
+    `;
+  }
+
+  function field(name, label, value) {
+    return `
+      <div class="field">
+        <label>${label}</label>
+        <input data-field="${name}" value="${escapeHtml(value)}" />
       </div>
     `;
-    return;
   }
 
-  list.innerHTML = `
-    ${errorMessage ? `<div class="admin-warning">${escapeHtml(errorMessage)}</div>` : ""}
-    ${cars
-      .map(
-        (car) => `
-          <article class="car-card admin-car-card" tabindex="0" data-edit-car="${escapeAttr(car.id)}">
-            <div class="car-media">
-              <img src="${escapeAttr(car.cover || car.photos?.[0] || demoCover)}" alt="${escapeAttr(car.title)}" loading="lazy" />
-              <span class="admin-card-badge">Редагувати</span>
-            </div>
-            <div class="car-body">
-              <div class="car-title-row">
-                <h3>${escapeHtml(car.title)}</h3>
-                <span class="status-badge">${escapeHtml(car.status || "В наявності")}</span>
-              </div>
-              <p class="car-subtitle">${escapeHtml([car.make, car.model, car.year].filter(Boolean).join(" · "))}</p>
-              <div class="car-meta">
-                <span>${formatKm(car.mileage)}</span>
-                <span>${escapeHtml(car.fuel || "—")}</span>
-                <span>${escapeHtml(car.gearbox || "—")}</span>
-              </div>
-              <div class="car-foot">
-                <strong>${formatPrice(car.price)}</strong>
-                <span>${escapeHtml(car.city || "")}</span>
-              </div>
-            </div>
-          </article>
-        `,
-      )
-      .join("")}
-  `;
-
-  list.querySelectorAll("[data-edit-car]").forEach((card) => {
-    card.addEventListener("click", () => openEditor(card.dataset.editCar));
-    card.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        openEditor(card.dataset.editCar);
-      }
-    });
-  });
-}
-
-function showList() {
-  listView.classList.add("is-active");
-  editorView.classList.remove("is-active");
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
-function openEditor(id = "") {
-  const car = getCarById(id);
-  form.reset();
-  form.elements.id.value = car?.id || "";
-  formTitle.textContent = car ? "Редагування авто" : "Нове авто";
-  setDeleteButtonVisible(Boolean(car));
-  currentPhotos = car ? uniquePhotos([car.cover, ...(car.photos || [])]) : [];
-
-  if (car) {
-    fillForm(car);
+  function option(value, label, current) {
+    return `<option value="${value}" ${value === current ? "selected" : ""}>${label}</option>`;
   }
 
-  renderPhotoGrid();
-  syncPhotoInputs();
-  listView.classList.remove("is-active");
-  editorView.classList.add("is-active");
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
+  function addNewCar() {
+    const id = "new-" + slug(Date.now());
+    const car = {
+      id,
+      title: "Нове авто",
+      brand: "",
+      model: "",
+      year: new Date().getFullYear(),
+      price: "$ 0",
+      credit: "В кредит від $ 180/міс",
+      status: "sale",
+      fuel: "",
+      fuelKey: "",
+      engine: "",
+      gearbox: "Автомат",
+      gearboxKey: "auto",
+      mileage: "",
+      city: "Київ",
+      body: "",
+      image: "",
+      detailImage: "",
+      featuredImage: "",
+      photos: [],
+      description: ""
+    };
 
-function fillForm(car) {
-  form.elements.title.value = car.title || "";
-  form.elements.status.value = car.status || "В наявності";
-  form.elements.make.value = car.make || "";
-  form.elements.model.value = car.model || "";
-  form.elements.price.value = car.price || "";
-  form.elements.year.value = car.year || "";
-  form.elements.mileage.value = mileageInputFromKm(car.mileage);
-  form.elements.city.value = car.city || "";
-  form.elements.fuel.value = car.fuel || "Бензин";
-  form.elements.gearbox.value = car.gearbox || "Автомат";
-  form.elements.body.value = car.body || "";
-  form.elements.engine.value = car.engine || "";
-  form.elements.description.value = car.description || "";
-}
-
-function clearEditor() {
-  form.reset();
-  form.elements.id.value = "";
-  currentPhotos = [];
-  renderPhotoGrid();
-  syncPhotoInputs();
-  formTitle.textContent = "Нове авто";
-  setDeleteButtonVisible(false);
-}
-
-function renderPhotoGrid() {
-  photoGrid.innerHTML = `
-    ${currentPhotos
-      .map(
-        (photo, index) => `
-          <div class="photo-tile ${index === 0 ? "is-cover" : ""}">
-            <img src="${escapeAttr(photo)}" alt="Фото авто ${index + 1}" />
-            ${index === 0 ? `<span>Головне</span>` : `<button type="button" data-make-cover="${index}">Головне</button>`}
-            <button type="button" class="remove-photo" aria-label="Видалити фото" data-remove-photo="${index}">×</button>
-          </div>
-        `,
-      )
-      .join("")}
-    <button class="photo-add" type="button" data-add-photo>
-      <span>+</span>
-      <small>Додати фото</small>
-    </button>
-  `;
-
-  photoGrid.querySelector("[data-add-photo]").addEventListener("click", () => photoInput.click());
-  photoGrid.querySelectorAll("[data-remove-photo]").forEach((button) => {
-    button.addEventListener("click", () => {
-      currentPhotos.splice(Number(button.dataset.removePhoto), 1);
-      renderPhotoGrid();
-      syncPhotoInputs();
-    });
-  });
-  photoGrid.querySelectorAll("[data-make-cover]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const index = Number(button.dataset.makeCover);
-      const [photo] = currentPhotos.splice(index, 1);
-      currentPhotos.unshift(photo);
-      renderPhotoGrid();
-      syncPhotoInputs();
-    });
-  });
-}
-
-function syncPhotoInputs() {
-  const photos = uniquePhotos(currentPhotos);
-  currentPhotos = photos;
-  coverInput.value = photos[0] || demoCover;
-  photosInput.value = JSON.stringify(photos.length ? photos : [demoCover]);
-}
-
-function uniquePhotos(photos) {
-  return [...new Set((photos || []).filter(Boolean))];
-}
-
-function setSubmitState(active) {
-  const submit = form.querySelector('button[type="submit"]');
-  if (!submit) return;
-  submit.disabled = active;
-  submit.textContent = active ? "Зберігаю..." : "Зберегти авто";
-}
-
-function setDeleteButtonVisible(visible) {
-  if (!deleteCarButton) return;
-  deleteCarButton.hidden = !visible;
-  adminActions?.classList.toggle("has-delete", visible);
-}
-
-function setDeleteState(active) {
-  if (!deleteCarButton) return;
-  deleteCarButton.disabled = active;
-  deleteCarButton.textContent = active ? "Видаляю..." : "Видалити авто";
-}
-
-function formatPrice(value) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(priceToUsd(value));
-}
-
-function formatKm(value) {
-  const km = Number(value) || 0;
-  if (km >= 1000) {
-    const thousands = km / 1000;
-    const shown = Number.isInteger(thousands) ? thousands : Number(thousands.toFixed(1));
-    return `${new Intl.NumberFormat("uk-UA").format(shown)} тис. км`;
+    cars.unshift(car);
+    renderEditor(0);
   }
-  return `${new Intl.NumberFormat("uk-UA").format(km)} км`;
-}
 
-function showToast(message) {
-  const toast = document.querySelector("[data-toast]");
-  if (!toast) return;
-  clearTimeout(toastTimer);
-  toast.textContent = message;
-  toast.classList.add("is-visible");
-  toastTimer = setTimeout(() => toast.classList.remove("is-visible"), 2200);
-}
+  function updateActiveField(field, value) {
+    if (activeIndex === null) return;
+    if (field === "year") cars[activeIndex][field] = Number(value) || value;
+    else cars[activeIndex][field] = value;
 
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
+    if (field === "title" && cars[activeIndex].id.startsWith("new-")) {
+      cars[activeIndex].id = slug(value) + "-" + Date.now().toString().slice(-5);
+    }
+  }
 
-function escapeAttr(value) {
-  return escapeHtml(value);
-}
+  function readFiles(files) {
+    return Promise.all(Array.from(files).map((file) => new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    })));
+  }
+
+  async function saveActiveCar() {
+    if (activeIndex === null) return;
+    const car = cars[activeIndex];
+    const photos = (car.photos || []).filter(Boolean);
+    car.image = photos[0] || car.image;
+    car.detailImage = photos[0] || car.detailImage;
+    car.featuredImage = photos[0] || car.featuredImage;
+    car.photos = photos;
+
+    try {
+      await upsertCars([car]);
+      showToast("Авто збережено.");
+      renderEditor(activeIndex);
+    } catch (error) {
+      console.error(error);
+      showToast("Помилка збереження.");
+    }
+  }
+
+  async function deleteActiveCar() {
+    if (activeIndex === null) return;
+    const car = cars[activeIndex];
+    const ok = confirm(`Видалити ${car.title || "це авто"}?`);
+    if (!ok) return;
+
+    try {
+      await deleteCarFromDb(car);
+      cars.splice(activeIndex, 1);
+      localStorage.setItem(KEY, JSON.stringify(cars));
+      showToast("Авто видалено.");
+      renderCatalog();
+    } catch (error) {
+      console.error(error);
+      showToast("Помилка видалення.");
+    }
+  }
+
+  function showToast(text) {
+    toastNode.textContent = text;
+    toastNode.classList.add("show");
+    setTimeout(() => toastNode.classList.remove("show"), 2600);
+  }
+
+  catalogNode.addEventListener("click", (event) => {
+    const card = event.target.closest(".admin-car-card");
+    if (!card) return;
+    renderEditor(Number(card.dataset.index));
+  });
+
+  catalogNode.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") return;
+    const card = event.target.closest(".admin-car-card");
+    if (!card) return;
+    renderEditor(Number(card.dataset.index));
+  });
+
+  editorWrap.addEventListener("input", async (event) => {
+    const field = event.target.dataset.field;
+    if (field) updateActiveField(field, event.target.value);
+  });
+
+  editorWrap.addEventListener("change", async (event) => {
+    if (event.target.dataset.action !== "add-photos") return;
+    if (activeIndex === null) return;
+    const files = event.target.files;
+    if (!files || !files.length) return;
+
+    showToast("Додаю фото...");
+    const images = await readFiles(files);
+    cars[activeIndex].photos = (cars[activeIndex].photos || []).concat(images);
+    renderEditor(activeIndex);
+  });
+
+  editorWrap.addEventListener("click", async (event) => {
+    const target = event.target.closest("[data-action]");
+    if (!target) return;
+
+    const action = target.dataset.action;
+
+    if (action === "remove-photo") {
+      const photoIndex = Number(target.dataset.photoIndex);
+      cars[activeIndex].photos.splice(photoIndex, 1);
+      renderEditor(activeIndex);
+    }
+
+    if (action === "save-car") saveActiveCar();
+    if (action === "delete-car") deleteActiveCar();
+    if (action === "back-catalog") renderCatalog();
+  });
+
+  addBtn.addEventListener("click", addNewCar);
+  backBtn.addEventListener("click", renderCatalog);
+
+  loadCars();
+})();
